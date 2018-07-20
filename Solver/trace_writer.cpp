@@ -1,0 +1,103 @@
+#include "trace_writer.h"
+
+using namespace std;
+
+TraceWriter::TraceWriter(const char * fname)
+{
+	f = fopen(fname, "wb");
+}
+
+TraceWriter::~TraceWriter()
+{
+	fclose(f);
+}
+
+void TraceWriter::halt()
+{
+	u8 data = 255;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::wait()
+{
+	u8 data = 254;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::flip()
+{
+	u8 data = 253;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::move(const Point & from, const Point & to, bool reverse_order)
+{
+	auto write_long = [&](int from, int to, int q)
+	{
+		Assert(from != to);
+		Assert(abs(from - to) <= 15);
+		u8 data[2] = { (q << 4) + 4, to - from + 15 };
+		fwrite(&data, 1, 2, f);
+	};
+	auto write_short = [&](int from1, int to1, int q1, int from2, int to2, int q2)
+	{
+		Assert(abs(from1 - to1) <= 5);
+		Assert(abs(from2 - to2) <= 5);
+		if (reverse_order)
+		{
+			swap(from1, from2);
+			swap(to1, to2);
+			swap(q1, q2);
+		}
+		u8 data[2] = { (q2 << 6) + (q1 << 4) + 12, ((to2 - from2 + 5) << 4) + (to1 - from1 + 5) };
+		fwrite(&data, 1, 2, f);
+	};
+	if (from.x == to.x && from.y == to.y)
+		write_long(from.z, to.z, 3);
+	else if (from.x == to.x && from.z == to.z)
+		write_long(from.y, to.y, 2);
+	else if (from.y == to.y && from.z == to.z)
+		write_long(from.x, to.x, 1);
+	else if (from.x == to.x)
+		write_short(from.y, to.y, 2, from.z, to.z, 3);
+	else if (from.y == to.y)
+		write_short(from.x, to.x, 1, from.z, to.z, 3);
+	else if (from.z == to.z)
+		write_short(from.x, to.x, 1, from.y, to.y, 2);
+	else
+		Assert(false);
+}
+
+inline int get_nd(const Point &from, const Point &to)
+{
+	Assert(abs(from.x - to.x) + abs(from.y - to.y) + abs(from.z - to.z) <= 2);
+	Assert(abs(from.x - to.x) <= 1 && abs(from.y - to.y) <= 1 && abs(from.z - from.z) <= 1);
+	return (to.x - from.x + 1) * 9 + (to.y - from.y + 1) * 3 + to.z - from.z + 1;
+}
+
+void TraceWriter::fusion_p(const Point & from, const Point & to)
+{
+	u8 data = (get_nd(from, to) << 3) + 7;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::fusion_s(const Point & from, const Point & to)
+{
+	u8 data = (get_nd(from, to) << 3) + 6;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::fill(const Point & from, const Point & to)
+{
+	u8 data = (get_nd(from, to) << 3) + 3;
+	fwrite(&data, 1, 1, f);
+}
+
+void TraceWriter::fission(const Point & from, const Point & to, int m)
+{
+	u8 data = (get_nd(from, to) << 3) + 5;
+	fwrite(&data, 1, 1, f);
+	Assert(m >= 0 && m <= 20);
+	data = m;
+	fwrite(&data, 1, 1, f);
+}
