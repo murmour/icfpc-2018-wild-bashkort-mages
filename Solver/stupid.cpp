@@ -4,6 +4,12 @@ using namespace std;
 
 struct StupidSolver
 {
+	void moveto(Point p)
+	{
+		w->move(b.pos, p);
+		b.pos = p;
+	}
+
 	void reach(Point p, bool exact = false)
 	{
 		if (!exact && p == b.pos)
@@ -14,8 +20,7 @@ struct StupidSolver
 				if (!cur.is_valid(a)) continue;
 				if (!cur[a])
 				{
-					w->move(b.pos, a);
-					b.pos = a;
+					moveto(a);
 					return;
 				}
 			}
@@ -39,8 +44,7 @@ struct StupidSolver
 			}
 			if (k > 0)
 			{
-				w->move(b.pos, a);
-				b.pos = a;
+				moveto(a);
 				continue;
 			}
 
@@ -58,8 +62,7 @@ struct StupidSolver
 			}
 			if (k > 0)
 			{
-				w->move(b.pos, a);
-				b.pos = a;
+				moveto(a);
 				continue;
 			}
 
@@ -77,11 +80,10 @@ struct StupidSolver
 			}
 			if (k > 0)
 			{
-				w->move(b.pos, a);
-				b.pos = a;
+				moveto(a);
 				continue;
 			}
-			Assert(false);
+			bfs(b.pos, p, exact);
 		}
 	}
 
@@ -103,21 +105,50 @@ struct StupidSolver
 		};
 
 		push(from, 10);
-		while (!q.empty)
+		while (!q.empty())
 		{
 			auto t = q.front(); q.pop();
 			if (check(t))
 			{
 				// restore path
+				vector<int> path;
+				auto tt = t;
+				while (t != from)
+				{
+					int dir = temp[t] - 1;
+					Assert(dir >= 0 && dir < 6);
+					path.push_back(dir);
+					t = t - kDeltas6[dir];
+				}
+				reverse(path.begin(), path.end());
+				int prev = -1, cnt = 0;
+				for (auto d : path)
+				{
+					if (d == prev && cnt < 15)
+						cnt++;
+					else
+					{
+						if (cnt > 0) moveto(b.pos + kDeltas6[prev] * cnt);
+						prev = d;
+						cnt = 1;
+					}
+				}
+				if (cnt > 0) moveto(b.pos + kDeltas6[prev] * cnt);
+				Assert(b.pos == tt);
+
+				// cleanup
+				for (auto &p : used) temp[p] = 0;
 				return;
 			}
 			for (int i = 0; i < 6; i++)
 			{
 				auto p = t + kDeltas6[i];
 				if (!cur.is_valid(p)) continue;
-
+				if (!cur[p])
+					push(p, i + 1);
 			}
 		}
+		Assert(false);
 	}
 
 	void dfs(Point p)
@@ -153,6 +184,7 @@ struct StupidSolver
 		Assert(x0 != -1);
 		b = Bot::Initial();
 		cur.clear(R);
+		temp.clear(R);
 		dfs({ x0, 0, z0 });
 
 		reach({ 0, 0, 0 }, true);

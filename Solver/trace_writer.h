@@ -42,6 +42,18 @@ struct Point
 		return { x + other.x, y + other.y, z + other.z };
 	}
 
+	Point operator * (int k) const
+	{
+		return { x * k, y * k, z * k };
+	}
+
+	Point operator - (const Point &other) const
+	{
+		return { x - other.x, y - other.y, z - other.z };
+	}
+
+
+
 	int n_diff(const Point &other) const
 	{
 		return (x != other.x) + (y != other.y) + (z != other.z);
@@ -77,7 +89,7 @@ struct Matrix
 	bool load_from_file(const char * filename);
 	void clear(int r);
 
-	bool& operator [] (const Point &p)
+	char& operator [] (const Point &p)
 	{
 #ifdef DEBUG
 		Assert(is_valid(p));
@@ -85,7 +97,7 @@ struct Matrix
 		return m[p.x][p.y][p.z];
 	}
 
-	bool operator [] (const Point &p) const
+	char operator [] (const Point &p) const
 	{
 #ifdef DEBUG
 		Assert(is_valid(p));
@@ -123,7 +135,7 @@ private:
 	int n_bots_next = 1; // number of bots in the next move
 	int cur_bot = 0;
 	i64 energy = 0; // total energy spent
-	int R; // resolution 
+	int R; // resolution
 };
 
 typedef std::function<int(const Matrix &target, TraceWriter &writer)> TSolverFun;
