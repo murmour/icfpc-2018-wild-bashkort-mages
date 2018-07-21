@@ -9,6 +9,8 @@
 #include "imgui_impl_opengl2.h"
 #include "GL/freeglut.h"
 
+#include "trace.h"
+
 #ifdef __linux__
 #   include <dirent.h>
 #   include <unistd.h>
@@ -32,9 +34,11 @@ using namespace std;
 void __never(int a){printf("\nOPS %d", a);}
 #define ass(s) {if (!(s)) {__never(__LINE__);cout.flush();cerr.flush();abort();}}
 
-double colors[8][3] = {
+double colors[][3] = {
 	{ 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 1.0, 1.0, 0.0 },
-	{ 1.0, 0.0, 1.0 }, { 0.0, 1.0, 1.0 }, { 0.5, 0.5, 0.5 }, { 1.0, 0.5, 0.0 } };
+	{ 1.0, 0.0, 1.0 }, { 0.0, 1.0, 1.0 }, { 0.5, 0.5, 0.5 }, { 1.0, 0.5, 0.0 },
+	{ 1.0, 1.0, 1.0 }
+};
 
 struct P
 {
@@ -285,6 +289,101 @@ void my_display_code()
 }
 
 vector< string > model_files;
+string cur_model = "not selected";
+vector< pair< string, string > > trace_files;
+string cur_trace = "not selected";
+vector< TraceCommand > trace_cmd;
+int cur_cmd;
+bool trace_mode = false;
+int trace_speed = 1;
+
+constexpr const int kMaxBots = 20;
+
+struct Bot
+{
+	Point pos;
+	int seeds;
+	int id;
+	bool active;
+
+	/*static Bot Initial()
+	{
+		constexpr int initial_seeds = (1 << kMaxBots) - 2;
+		return { {0, 0, 0}, initial_seeds, 1, true };
+	}*/
+};
+
+struct SYSTEM_STATE
+{
+	VOXMAT ss_vm;
+
+	long long energy;
+	Bot bots[kMaxBots];
+	int cur_bot;
+	int n_bots;
+
+	void reset()
+	{
+		ss_vm.R = vm.R;
+		int R = vm.R;
+		ss_vm.filled = 0;
+		for (int a=0; a<R; a++)
+			for (int b=0; b<R; b++)
+				for (int c=0; c<R; c++)
+					ss_vm.m[a][b][c] = false;
+		cur_bot = -1;
+		for (int a=0; a<kMaxBots; a++)
+			bots[a] = { { 0, 0, 0 }, (1 << kMaxBots) - 2, a+1, a==0 };
+		n_bots = 1;
+	}
+
+	void perform_command( TraceCommand cmd )
+	{
+		while(1)
+		{
+			cur_bot++;
+			if (cur_bot == kMaxBots)
+			{
+				cur_bot=0;
+				energy += ss_vm.R * ss_vm.R * ss_vm.R * 3 + n_bots * 20;
+			}
+			if (bots[cur_bot].active) break;
+		}
+
+		if (cmd.tp == CT_HALT)
+		{
+			for (int a=0; a<kMaxBots; a++)
+				bots[a].active = false;
+		}
+		else if (cmd.tp == CT_WAIT)
+		{
+		}
+		else if (cmd.tp == CT_FLIP)
+		{
+		}
+		else if (cmd.tp == CT_S_MOVE)
+		{
+			bots[cur_bot].pos = bots[cur_bot].pos + cmd.p1;
+		}
+		else if (cmd.tp == CT_L_MOVE)
+		{
+			bots[cur_bot].pos = bots[cur_bot].pos + cmd.p1 + cmd.p2;
+		}
+		else if (cmd.tp == CT_FUSION_P)
+		{
+		}
+		else if (cmd.tp == CT_FUSION_S)
+		{
+		}
+		else if (cmd.tp == CT_FISSION)
+		{
+		}
+		else if (cmd.tp == CT_FILL)
+		{
+			ss_vm.m[ bots[cur_bot].pos.x + cmd.p1.x ][ bots[cur_bot].pos.y + cmd.p1.y ][ bots[cur_bot].pos.z + cmd.p1.z ] = true;
+		}
+	}
+} ss;
 
 void refresh_list_of_model_files()
 {
@@ -302,6 +401,49 @@ void refresh_list_of_model_files()
 	}
 }
 
+vector< string > parse_filename( string x )
+{
+	vector< string > seq;
+	string tmp = "";
+	x.push_back( 0 );
+	for (int a=0; x[a]; a++)
+	{
+		if ( ('a'<=x[a] && x[a]<='z') || ('A'<=x[a] && x[a]<='Z') )
+			tmp.push_back( x[a] );
+		else
+		{
+			seq.push_back( tmp );
+			tmp = "";
+			for (int b=a; x[b]; b++)
+				if ('0'<=x[b] && x[b]<='9')
+					tmp.push_back( x[b] );
+				else
+				{
+					int num;
+					sscanf_s( tmp.c_str(), "%d", &num );
+					char str[10];
+					sprintf_s( str, "%d", num );
+					seq.push_back( string( str ) );
+					tmp = "";
+					for (int c=b+1; x[c]; c++)
+						if (x[c]=='.' || x[c]==0)
+						{
+							seq.push_back( tmp );
+							tmp = "";
+							for (int d=c+1; x[d]; d++)
+								tmp.push_back( x[d] );
+							seq.push_back( tmp );
+							break;
+						}
+						else tmp.push_back( x[c] );
+					break;
+				}
+			break;
+		}
+	}
+	return seq;
+}
+
 void load_model_file( string file )
 {
 	cerr << "loading model file " << file.c_str() << "\n";
@@ -317,6 +459,7 @@ void load_model_file( string file )
 	fread_s( &xr, 1, 1, 1, f );
 	int r = xr;
 	vm.R = r;
+	vm.filled = 0;
 	int i=0, j=0, k=0;
 	for (int a=0; a<((r*r*r+7)/8); a++)
 	{
@@ -325,6 +468,7 @@ void load_model_file( string file )
 		for (int b=0; b<8; b++)
 		{
 			vm.m[i][j][k] = ((z>>b)&1);
+			if (vm.m[i][j][k]) vm.filled++;
 			k++;
 			if (k==r) { k=0; j++; }
 			if (j==r) { j=0; i++; }
@@ -335,6 +479,56 @@ void load_model_file( string file )
 	fclose( f );
 
 	cerr << "ok! R=" << r << "\n";
+
+	cerr << "loading list of traces\n";
+
+	vector< string > infseq = parse_filename( file );
+
+	trace_files.clear();
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir("../data/traces/")) != NULL)
+	{
+		while ((ent = readdir(dir)) != NULL)
+			if (ent->d_name[0]!='.')
+			{
+				vector< string > seq = parse_filename( string(ent->d_name) );
+
+				if (seq[0]==infseq[0] && seq[1]==infseq[1] && seq[3]=="nbt")
+				{
+					for (int a=0; a<(int)seq.size(); a++)
+						cerr << seq[a].c_str() << " ";
+					cerr << "\n";
+					trace_files.push_back( make_pair( seq[2], string(ent->d_name) ) );
+				}
+			}
+		closedir(dir);
+	}
+	cur_trace = "not selected";
+	trace_cmd.clear();
+	cerr << "ok! traces=" << trace_files.size() << "\n";
+}
+
+void load_trace_file( string file )
+{
+	cerr << "loading trace file " << file.c_str() << "\n";
+
+	TraceReader tr;
+	if (! tr.open_file( (string("../data/traces/") + file).c_str() ) )
+	{
+		cerr << "cannot open " << file.c_str() << "\n";
+		return;
+	}
+	trace_cmd.clear();
+	while(1)
+	{
+		TraceCommand cmd = tr.read_next();
+		if (cmd.tp == CT_UNDEFINED) break;
+		trace_cmd.push_back( cmd );
+		if (cmd.tp == CT_HALT) break;
+	}
+
+	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
 }
 
 void nano_display_code()
@@ -342,11 +536,10 @@ void nano_display_code()
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
 
-	ImGui::Begin( "Nanodesu~" );
+	ImGui::Begin( "Nanovisu~" );
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 
-	static string cur_model = "not selected";
 	static bool need_refresh = true;
 	if (ImGui::BeginCombo("Model", cur_model.c_str(), 0)) // The second parameter is the label previewed before opening the combo.
 	{
@@ -360,6 +553,9 @@ void nano_display_code()
 			bool is_selected = (cur_model == model_files[a]);
 			if (ImGui::Selectable(model_files[a].c_str(), is_selected))
 			{
+				trace_mode = false;
+				ss.reset();
+				cur_cmd = 0;
 				cur_model = model_files[a];
 				load_model_file( cur_model );
 				need_refresh = true;
@@ -370,7 +566,103 @@ void nano_display_code()
 		ImGui::EndCombo();
 	}
 
-	ImGui::Text( "R=%d Filled=%d\n", vm.R, vm.filled );
+	ImGui::Text( "Resolution: %d  Filled: %d\n", vm.R, vm.filled );
+
+	if (ImGui::BeginCombo("Solver", cur_trace.c_str(), 0))
+	{
+		for (int a = 0; a < (int)trace_files.size(); a ++)
+		{
+			bool is_selected = (cur_trace == trace_files[a].first);
+			if (ImGui::Selectable(trace_files[a].first.c_str(), is_selected))
+			{
+				trace_mode = false;
+				ss.reset();
+				cur_cmd = 0;
+				cur_trace = trace_files[a].first;
+				load_trace_file( trace_files[a].second );
+			}
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();   // Set the initial focus when opening the combo (scrolling + for keyboard navigation support in the upcoming navigation branch)
+		}
+		ImGui::EndCombo();
+	}
+
+	//char str[100];
+	ImGui::Text( "Trace Commands [%d/%d]", cur_cmd, (int)trace_cmd.size() );
+	//if (ImGui::TreeNode( str ))
+	{
+		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true );
+		ImGuiListClipper clipper(trace_cmd.size());
+		while (clipper.Step())
+		{
+			for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+			{
+				char str[10];
+				sprintf_s( str, "%d", i );
+				ImGui::Text( str );
+				ImGui::SameLine();
+				float hue = (int)trace_cmd[i].tp*0.08f;
+				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
+				ImGui::Button( trace_cmd[i].cmd_to_string().c_str() );
+				ImGui::PopStyleColor(3);
+			}
+		}
+		ImGui::EndChild();
+		//ImGui::TreePop();
+	}
+
+	if (trace_mode)
+	{
+		if (ImGui::Button( "Pause" ))
+			trace_speed = 0;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 1" ))
+			trace_speed = 1;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 5" ))
+			trace_speed = 5;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 10" ))
+			trace_speed = 10;
+		ImGui::SameLine();
+		if (ImGui::Button( "Step" ))
+		{
+			trace_speed = 0;
+			if (cur_cmd < (int)trace_cmd.size())
+			{
+				ss.perform_command( trace_cmd[cur_cmd] );
+				cur_cmd++;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button( "Stop" ))
+		{
+			trace_mode = false;
+			ss.reset();
+			cur_cmd = 0;
+		}
+		ImGui::Text( "Speed: %d\n", trace_speed );
+	}
+	else
+	{
+		if (ImGui::Button( "Trace" ))
+		{
+			trace_mode = true;
+			ss.reset();
+			cur_cmd = 0;
+			trace_speed = 1;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button( "Trace Step" ))
+		{
+			trace_mode = true;
+			ss.reset();
+			cur_cmd = 0;
+			trace_speed = 0;
+		}
+	}
 
 	ImGui::End();
 }
@@ -423,7 +715,25 @@ void display_func()
     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	draw_voxel_matrix( vm );
+	if (trace_mode)
+	{
+		draw_voxel_matrix( ss.ss_vm );
+		double dd = 1. / ss.ss_vm.R;
+		for (int a=0; a<kMaxBots; a++)
+			if (ss.bots[a].active)
+				draw_sphere(
+					ss.bots[a].pos.x*dd + dd*0.5 - 0.5,
+					ss.bots[a].pos.y*dd + dd*0.5 - 0.5,
+					ss.bots[a].pos.z*dd + dd*0.5 - 0.5, dd * 0.4, 8 );
+
+		for (int a=0; a<trace_speed; a++)
+			if (cur_cmd < (int)trace_cmd.size())
+			{
+				ss.perform_command( trace_cmd[cur_cmd] );
+				cur_cmd++;
+			}
+	}
+	else draw_voxel_matrix( vm );
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 
     glutSwapBuffers();

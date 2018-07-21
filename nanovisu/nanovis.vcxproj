@@ -121,6 +121,10 @@
     <ClCompile Include="imgui_impl_freeglut.cpp" />
     <ClCompile Include="imgui_impl_opengl2.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="trace.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="trace.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
