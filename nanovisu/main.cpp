@@ -393,7 +393,7 @@ void refresh_list_of_model_files()
 
 	DIR *dir;
 	struct dirent *ent;
-	if ((dir = opendir("../data/problemsL/")) != NULL)
+	if ((dir = opendir("../data/problemsF/")) != NULL)
 	{
 		while ((ent = readdir(dir)) != NULL)
 			if (ent->d_name[0]=='L')
@@ -449,7 +449,7 @@ void load_model_file( string file )
 {
 	cerr << "loading model file " << file.c_str() << "\n";
 
-	FILE * f = fopen( ( string("../data/problemsL/") + file ).c_str(), "rb" );
+	FILE * f = fopen( ( string("../data/problemsF/") + file ).c_str(), "rb" );
 	if (!f)
 	{
 		cerr << "cannot open " << file.c_str() << ":(\n";
@@ -488,7 +488,7 @@ void load_model_file( string file )
 	trace_files.clear();
 	DIR *dir;
 	struct dirent *ent;
-	if ((dir = opendir("../data/traces/")) != NULL)
+	if ((dir = opendir("../data/tracesF/")) != NULL)
 	{
 		while ((ent = readdir(dir)) != NULL)
 			if (ent->d_name[0]!='.')
@@ -515,7 +515,7 @@ void load_trace_file( string file )
 	cerr << "loading trace file " << file.c_str() << "\n";
 
 	TraceReader tr;
-	if (! tr.open_file( (string("../data/traces/") + file).c_str() ) )
+	if (! tr.open_file( (string("../data/tracesF/") + file).c_str() ) )
 	{
 		cerr << "cannot open " << file.c_str() << "\n";
 		return;
