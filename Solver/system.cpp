@@ -80,4 +80,3 @@
     	if (!HasArg(arg_name)) return std::vector<std::string>();
     	return args[arg_name];
     }
-

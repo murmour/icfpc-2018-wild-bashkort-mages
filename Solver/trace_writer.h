@@ -123,7 +123,7 @@ private:
 	int n_bots_next = 1; // number of bots in the next move
 	int cur_bot = 0;
 	i64 energy = 0; // total energy spent
-	int R; // resolution 
+	int R; // resolution
 };
 
 typedef std::function<int(const Matrix &target, TraceWriter &writer)> TSolverFun;
