@@ -377,7 +377,6 @@ void nano_display_code()
 
 void display_func()
 {
-
 	// Start the ImGui frame
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplFreeGLUT_NewFrame();
@@ -441,9 +440,6 @@ void idle_func()
 
 int main(int argc, char * argv[])
 {
-	freopen("input.txt","r",stdin);
-	freopen("output.txt","w",stdout);
-
 	sol();
 
 	glutInit(&argc, argv);
