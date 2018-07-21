@@ -61,12 +61,9 @@ struct CutterSolver
 	{
 		// first, every active bot should get to its position
 		int k = (int)active.size();
-		vector<MemoryTraceWriter> ww(k);
 		for (int i = 0; i < k; i++)
-			active[i]->pos = reach_cell(active[i]->pos, starts[active[i]->id], &cur, &ww[i], true);
-		int max_moves = 0;
-		for (auto &w : ww) max_moves = max(max_moves, (int)w.commands.size());
-		for (auto &w : ww) while ((int)w.commands.size() < max_moves) w.wait();
+			active[i]->pos = reach_cell(active[i]->pos, starts[active[i]->left], &cur, &active[i]->mw, true);
+		collect_commands(w, active);
 		// now, fission
 		vector<Bot*> new_acitve;
 		if (active.size() < starts.size())
@@ -74,26 +71,34 @@ struct CutterSolver
 			for (int i = 0; i < k; i++)
 			{
 				auto b = active[i];
-				int low = low_bit(b->seeds);
-				int high = high_bit(b->seeds);
 				new_acitve.push_back(b);
-				if (low == high)
-					ww[i].wait();
+				if (b->seeds == 0)
+					b->mw.wait();
 				else
 				{
-					int t = (low + high) / 2 + 1;
+					int low = low_bit(b->seeds);
+					int high = high_bit(b->seeds);
+					int have_seeds = high - low + 1;
+					int give_to_child = (have_seeds + 1) / 2;
+					int m = give_to_child - 1;
+
+					int t = (b->left + b->right) / 2 + 1;
 					Point pos = b->pos;
 					pos.x++;
-					bots[t] = Bot({ pos, make_seeds(t, high), t, b->id, step });
-					ww[i].fission(b->pos, pos, t + 1);
+					bots[t] = Bot(pos, make_seeds(low + 1, low + m), low);
+					bots[t].step = step;
+					bots[t].parent = b->left; // not id!
+					bots[t].left = t;
+					bots[t].right = b->right;
+					b->right = t - 1;
+					b->seeds = make_seeds(low + m + 1, high);
+
+					b->mw.fission(b->pos, pos, give_to_child - 1);
 					new_acitve.push_back(&bots[t]);
 				}
 			}
-			max_moves++;
 		}
-		for (int m = 0; m < max_moves; m++)
-			for (int i = 0; i < k; i++)
-				w->do_command(ww[i].commands[m], i);
+		collect_commands(w, active);
 		if (!new_acitve.empty())
 			fission(new_acitve, step + 1);
 	}
@@ -111,7 +116,6 @@ struct CutterSolver
 		{
 			u32 k = active.size();
 			bool f[kMaxBots] = { false };
-			vector<MemoryTraceWriter> ww(k);
 			for (u32 i = 0; i < k; i++)
 			{
 				Bot *b = active[i];
@@ -121,11 +125,10 @@ struct CutterSolver
 					Point pos = bots[active[i]->parent].pos;
 					f[b->parent] = true;
 					pos.x++;
-					b->pos = reach_cell(b->pos, pos, &cur, &ww[i], true);
+					b->pos = reach_cell(b->pos, pos, &cur, &b->mw, true);
 				}
 			}
-			collect_commands(w, ww);
-			for (auto &w : ww) w.commands.clear();
+			collect_commands(w, active);
 			vector<Bot*> new_active;
 			for (u32 i = 0; i < k; i++)
 			{
@@ -134,24 +137,24 @@ struct CutterSolver
 				{
 					Point pos = b->pos;
 					pos.x--;
-					ww[i].fusion_s(b->pos, pos);
+					b->mw.fusion_s(b->pos, pos);
 				}
 				else
 				{
 					new_active.push_back(b);
-					if (f[b->id])
+					if (f[b->left])
 					{
 						Point pos = b->pos;
 						pos.x++;
-						ww[i].fusion_p(b->pos, pos);
+						b->mw.fusion_p(b->pos, pos);
 					}
 					else
 					{
-						ww[i].wait();
+						b->mw.wait();
 					}
 				}
 			}
-			collect_commands(w, ww);
+			collect_commands(w, active);
 			max_step--;
 			Assert(new_active.size() < active.size());
 			active.swap(new_active);
@@ -196,10 +199,11 @@ struct CutterSolver
 		cur.clear(R);
 
 		// ok, now fission...
-		bots[0] = Bot({ Point::Origin, make_seeds(0, n), 0, -1, 0 });
+		bots[0] = Bot(Point::Origin, make_seeds(1, n-1), 0);
+		bots[0].left = 0;
+		bots[0].right = n - 1;
 		fission({ &bots[0] }, 1);
 
-		vector<MemoryTraceWriter> ww(n);
 		for (int seg = 0; seg < n; seg++)
 		{
 			XL = lims0[seg];
@@ -222,11 +226,13 @@ struct CutterSolver
 					}
 			Assert(x0 != -1);
 			
-			BFS(&bots[seg], { x0, 0, z0 }, &ww[seg]);
+			BFS(&bots[seg], { x0, 0, z0 }, &bots[seg].mw);
 
-			bots[seg].pos = reach_cell(bots[seg].pos, starts[seg], &cur, &ww[seg], true);
+			bots[seg].pos = reach_cell(bots[seg].pos, starts[seg], &cur, &bots[seg].mw, true);
 		}
-		collect_commands(w, ww);
+		vector<Bot*> all_bots;
+		for (int i = 0; i < n; i++) all_bots.push_back(bots + i);
+		collect_commands(w, all_bots);
 		cur.set_x_limits(-1, -1);
 		fusion();
 		w->halt();

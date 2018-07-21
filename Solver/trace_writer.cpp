@@ -242,19 +242,22 @@ const vector<Point>& Deltas26()
 	return deltas;
 }
 
-void collect_commands(TraceWriter * w, const vector<MemoryTraceWriter>& ww)
+void collect_commands(TraceWriter * w, const std::vector<Bot*> &bots_)
 {
 	u32 max_moves = 0;
-	u32 k = ww.size();
-	for (auto &w : ww) max_moves = max<u32>(max_moves, w.commands.size());
+	auto bots = bots_;
+	sort(bots.begin(), bots.end(), [&](Bot *a, Bot *b) -> bool { return a->id < b->id; });
+	u32 k = bots.size();
+	for (auto b : bots) max_moves = max<u32>(max_moves, b->mw.commands.size());
 	for (u32 i = 0; i < max_moves; i++)
 		for (u32 j = 0; j < k; j++)
 		{
-			if (i >= ww[j].commands.size())
+			if (i >= bots[j]->mw.commands.size())
 				w->wait();
 			else
-				w->do_command(ww[j].commands[i], j);
+				w->do_command(bots[j]->mw.commands[i], j);
 		}
+	for (auto b : bots) b->mw.commands.clear();
 }
 
 void RegisterSolver(const std::string id, TSolverFun f)
