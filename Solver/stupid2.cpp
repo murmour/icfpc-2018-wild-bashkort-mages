@@ -220,6 +220,7 @@ struct StupidSolver2
 
 		reach({ 0, 0, 0 }, true);
 
+		validate();
 		w->halt();
 		return 0;
 	}
@@ -230,6 +231,15 @@ struct StupidSolver2
 		this->w = &w;
 		R = m.R;
 		return solve();
+	}
+
+	void validate()
+	{
+		for (int x = 0; x < R; x++)
+			for (int y = 0; y < R; y++)
+				for (int z = 0; z < R; z++)
+					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
+						assert(false);
 	}
 
 	const Matrix *m;

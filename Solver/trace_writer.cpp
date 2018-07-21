@@ -136,6 +136,7 @@ void TraceWriter::fill(const Point & from, const Point & to)
 	u8 data = (get_nd(from, to) << 3) + 3;
 	fwrite(&data, 1, 1, f);
 	energy += 12;
+	n_filled++;
 	next();
 }
 

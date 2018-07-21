@@ -52,8 +52,6 @@ struct Point
 		return { x - other.x, y - other.y, z - other.z };
 	}
 
-
-
 	int n_diff(const Point &other) const
 	{
 		return (x != other.x) + (y != other.y) + (z != other.z);
@@ -111,6 +109,17 @@ struct Matrix
 	{
 		return p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < R && p.y < R && p.z < R;
 	}
+
+	int get_filled_count() const
+	{
+		int res = 0;
+		for (int x = 0; x < R; x++)
+			for (int y = 0; y < R; y++)
+				for (int z = 0; z < R; z++)
+					if (m[x][y][z])
+						res++;
+		return res;
+	}
 };
 
 struct TraceWriter
@@ -128,6 +137,7 @@ struct TraceWriter
 	void fission(const Point &from, const Point &to, int m);
 
 	i64 get_energy() const { return energy; }
+	int get_filled_count() const { return n_filled; }
 private:
 	void next();
 
@@ -137,6 +147,7 @@ private:
 	int n_bots_next = 1; // number of bots in the next move
 	int cur_bot = 0;
 	i64 energy = 0; // total energy spent
+	int n_filled = 0;
 	int R; // resolution
 };
 

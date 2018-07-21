@@ -30,6 +30,8 @@ int main(int argc, char** argv)
 
 	solver_f(*model, tw);
 
+	Assert(tw.get_filled_count() == model->get_filled_count());
+
 	printf("%lld", tw.get_energy()); // print total energy spent
 	return 0;
 }
