@@ -19,3 +19,6 @@ log_*
 *.log
 *.html
 *.vs
+manipulator/tmp
+Solver/solver
+nanovisu/nanovisu
