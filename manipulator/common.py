@@ -5,6 +5,9 @@ import json
 import io
 
 
+traces_dir = '../data/tracesF/'
+
+
 problem_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_tgt.mdl$')
 
 def parse_problem_fname(fname):
@@ -36,7 +39,7 @@ def get_all_problems():
     return ps
 
 
-trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z0-9]+).meta$')
+trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z0-9_]+).meta$')
 
 def parse_trace_meta_fname(fname):
     m = re.match(trace_meta_name_rx, fname)
@@ -44,15 +47,15 @@ def parse_trace_meta_fname(fname):
         return None
     else:
         fname = m.group('prefix') + m.group('id') + '_' + m.group('solver')
-        return { 'fname': '../data/traces/' + fname + '.nbt',
-                 'meta_fname': '../data/traces/' + fname + '.meta',
+        return { 'fname': traces_dir + fname + '.nbt',
+                 'meta_fname': traces_dir + fname + '.meta',
                  'prefix': m.group('prefix'),
                  'id': int(m.group('id')),
                  'solver': m.group('solver') }
 
 
 def get_all_good_traces():
-    ps = [ parse_trace_meta_fname(f) for f in os.listdir("../data/traces") ]
+    ps = [ parse_trace_meta_fname(f) for f in os.listdir(traces_dir) ]
     ps = list(filter(None, ps))
     ps.sort(key = lambda f: f['id'])
     for p in ps:
