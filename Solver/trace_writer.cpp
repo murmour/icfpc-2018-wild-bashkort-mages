@@ -134,3 +134,46 @@ void TraceWriter::fission(const Point & from, const Point & to, int m)
 	energy += 24;
 	next();
 }
+
+bool Matrix::load_from_file(const char * filename)
+{
+	FILE * f = fopen(filename, "rb");
+	if (!f) return false;
+
+	unsigned char xr;
+	fread_s(&xr, 1, 1, 1, f);
+	int r = xr;
+	R = r;
+	int i = 0, j = 0, k = 0;
+	for (int a = 0; a<((r*r*r + 7) / 8); a++)
+	{
+		unsigned char z;
+		fread_s(&z, 1, 1, 1, f);
+		for (int b = 0; b<8; b++)
+		{
+			m[i][j][k] = ((z >> b) & 1);
+			k++;
+			if (k == r) { k = 0; j++; }
+			if (j == r) { j = 0; i++; }
+			if (i == r) break;
+		}
+	}
+
+	fclose(f);
+	return true;
+}
+
+map<string, TSolverFun> solvers;
+
+void RegisterSolver(const std::string id, TSolverFun f)
+{
+	Assert(solvers.find(id) == solvers.end());
+	solvers[id] = f;
+}
+
+TSolverFun GetSolver(const std::string id)
+{
+	if (solvers.find(id) == solvers.end())
+		return nullptr;
+	return solvers[id];
+}

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Solvers">
+      <UniqueIdentifier>{db1f9131-b27d-48b0-aa16-4514b8818e98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -26,6 +29,9 @@
     </ClCompile>
     <ClCompile Include="trace_writer.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stupid.cpp">
+      <Filter>Solvers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

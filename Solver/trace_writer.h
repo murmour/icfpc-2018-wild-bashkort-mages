@@ -5,6 +5,16 @@ struct Point
 	int x, y, z;
 };
 
+const int kMaxR = 250;
+
+struct Matrix
+{
+	int R;
+	bool m[kMaxR][kMaxR][kMaxR];
+
+	bool load_from_file(const char * filename);
+};
+
 struct TraceWriter
 {
 	TraceWriter(const char *fname, int R);
@@ -31,3 +41,11 @@ private:
 	i64 energy = 0; // total energy spent
 	int R; // resolution 
 };
+
+typedef std::function<int(const Matrix &target, TraceWriter &writer)> TSolverFun;
+
+void RegisterSolver(const std::string id, TSolverFun f);
+TSolverFun GetSolver(const std::string id);
+
+#define REG_SOLVER(id, solver) \
+	struct _R_##solver { _R_##solver() { RegisterSolver(id, solver); } } _r_##solver
