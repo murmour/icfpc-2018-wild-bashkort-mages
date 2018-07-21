@@ -1,5 +1,9 @@
 #include "trace_writer.h"
 
+#ifdef __linux__
+#   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
+#endif
+
 using namespace std;
 
 const Point Point::Origin = { 0, 0, 0 };
