@@ -1,35 +1,11 @@
 
 import subprocess
 import time
-import re
 import json
 import sys
 import os
 import io
-
-
-problem_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_tgt.mdl$')
-
-def parse_problem_fname(fname):
-    m = re.match(problem_name_rx, fname)
-    if m is None:
-        return None
-    else:
-        return { 'fname': '../data/problemsL/' + fname,
-                 'prefix': m.group('prefix'),
-                 'id': int(m.group('id')) }
-
-
-def filter_problems(lowIndex, highIndex):
-    print('Reading problems...')
-    ps = [ parse_problem_fname(f) for f in os.listdir("../data/problemsL") ]
-    ps = filter(None, ps)
-    def is_requested(f):
-        return ((f['id'] >= lowIndex) and (f['id'] <= highIndex))
-    ps = [ f for f in ps if is_requested(f) ]
-    ps.sort(key = lambda f: f['id'])
-    print('OK...')
-    return ps
+import common
 
 
 temp_counter = 0
@@ -79,7 +55,7 @@ if __name__ == '__main__':
                 f.write(json.dumps({ 'energy': energy }))
 
     pool = [ None ] * cpus
-    queue = filter_problems(low_index, high_index)
+    queue = common.filter_problems(low_index, high_index)
     left = len(queue)
 
     while left > 0:
@@ -92,6 +68,7 @@ if __name__ == '__main__':
                 queue = queue[1:]
                 pool[i] = start_solving(p)
                 if pool[i] is None:
+                    left -= 1
                     continue
                 else:
                     break
