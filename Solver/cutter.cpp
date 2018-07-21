@@ -1,4 +1,5 @@
 #include "trace_writer.h"
+#include "system.h"
 
 using namespace std;
 
@@ -159,7 +160,12 @@ struct CutterSolver
 
 	int solve()
 	{
-		const int n = 2; // number of bots
+		int n = 2; // number of bots
+		if (System::HasArg("bots"))
+		{
+			int n = atoi(System::GetArgValue("bots").c_str());
+			assert(n >= 1 && n <= 20);
+		}
 		int weight[kMaxR] = { 0 };
 		int tot_w = 0;
 		for (int x = 0; x < R; x++)
