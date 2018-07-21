@@ -102,48 +102,53 @@ struct TraceCommand
 
 	int bid = -1;
 
-	string cmd_to_string()
+	string coord_to_string( Point p )
 	{
-		if (tp==CT_HALT) return "Halt";
-		else if (tp==CT_WAIT) return "Wait";
-		else if (tp==CT_FLIP) return "Flip";
-		else if (tp==CT_S_MOVE)
+		char ch[20];
+		sprintf_s( ch, "[%d,%d,%d]", p.x, p.y, p.z );
+		return string(ch);
+	}
+
+	string cmd_to_string( bool sh_bid, bool no, bool shrt, bool coords)
+	{
+		string re = "";
+		if (sh_bid)
 		{
-			char ch[50];
-			sprintf_s( ch, "S Move [%d,%d,%d]", p1.x, p1.y, p1.z );
-			return string(ch);
+			char ch[10];
+			sprintf_s( ch, "%d", bid );
+			re += string( ch );
 		}
-		else if (tp==CT_L_MOVE)
+		string cc;
+		if (tp==CT_HALT) cc = (shrt ? "Ha" : "Halt");
+		else if (tp==CT_WAIT) cc = (shrt ? "Wa" : "Wait");
+		else if (tp==CT_FLIP) cc = (shrt ? "Fl" : "Flip");
+		else if (tp==CT_S_MOVE) cc = (shrt ? "SM" : "S Move");
+		else if (tp==CT_L_MOVE) cc = (shrt ? "LM" : "L Move");
+		else if (tp==CT_FUSION_P) cc = (shrt ? "FP" : "Fusion P");
+		else if (tp==CT_FUSION_S) cc = (shrt ? "FS" : "Fusion S");
+		else if (tp==CT_FISSION) cc = (shrt ? "Fi" : "Fission");
+		else if (tp==CT_FILL) cc = (shrt ? "FL" : "Fill");
+		else if (tp==CT_UNDEFINED) cc = (shrt ? "UD" : "Undefined");
+
+		if (!no)
 		{
-			char ch[50];
-			sprintf_s( ch, "L Move [%d,%d,%d] [%d,%d,%d]", p1.x, p1.y, p1.z, p2.x, p2.y, p2.z );
-			return string(ch);
+			if (re!="") re += " ";
+			re += cc;
 		}
-		else if (tp==CT_FUSION_P)
+
+		char str[20];
+		if (coords)
 		{
-			char ch[50];
-			sprintf_s( ch, "Fusion P [%d,%d,%d]", p1.x, p1.y, p1.z );
-			return string(ch);
+			if (re!="") re += " ";
+			if (tp==CT_S_MOVE) re += coord_to_string( p1 );
+			else if (tp==CT_L_MOVE) re += coord_to_string( p1 ) + " " + coord_to_string( p2 );
+			else if (tp==CT_FUSION_P) re += coord_to_string( p1 );
+			else if (tp==CT_FUSION_S) re += coord_to_string( p1 );
+			else if (tp==CT_FISSION) re += coord_to_string( p1 ) + " " + string( _itoa( m, str, 10 ) );
+			else if (tp==CT_FILL) re += coord_to_string( p1 );
 		}
-		else if (tp==CT_FUSION_S)
-		{
-			char ch[50];
-			sprintf_s( ch, "Fusion S [%d,%d,%d]", p1.x, p1.y, p1.z );
-			return string(ch);
-		}
-		else if (tp==CT_FISSION)
-		{
-			char ch[50];
-			sprintf_s( ch, "Fission [%d,%d,%d] %d", p1.x, p1.y, p1.z, m );
-			return string(ch);
-		}
-		else if (tp==CT_FILL)
-		{
-			char ch[50];
-			sprintf_s( ch, "Fill [%d,%d,%d]", p1.x, p1.y, p1.z );
-			return string(ch);
-		}
-		else if (tp==CT_UNDEFINED) return "UNDEFINED";
+
+		return re;
 	}
 };
 

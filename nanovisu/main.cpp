@@ -321,8 +321,6 @@ struct SYSTEM_STATE
 
 	long long energy;
 	Bot bots[kMaxBots];
-	//int cur_bot;
-	//int n_bots;
 
 	void reset()
 	{
@@ -333,26 +331,13 @@ struct SYSTEM_STATE
 			for (int b=0; b<R; b++)
 				for (int c=0; c<R; c++)
 					ss_vm.m[a][b][c] = false;
-		//cur_bot = -1;
 		for (int a=0; a<kMaxBots; a++)
 			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a+1, true };
 			else bots[a] = { { -10, -10, -10 }, 0, a+1, false };
-		//n_bots = 1;
 	}
 
 	void perform_command( TraceCommand cmd )
 	{
-		/*while(1)
-		{
-			cur_bot++;
-			if (cur_bot == kMaxBots)
-			{
-				cur_bot=0;
-				energy += ss_vm.R * ss_vm.R * ss_vm.R * 3 + n_bots * 20;
-			}
-			if (bots[cur_bot].active) break;
-		}
-
 		if (cmd.tp == CT_HALT)
 		{
 			for (int a=0; a<kMaxBots; a++)
@@ -366,18 +351,18 @@ struct SYSTEM_STATE
 		}
 		else if (cmd.tp == CT_S_MOVE)
 		{
-			bots[cur_bot].pos = bots[cur_bot].pos + cmd.p1;
+			bots[cmd.bid].pos = bots[cmd.bid].pos + cmd.p1;
 		}
 		else if (cmd.tp == CT_L_MOVE)
 		{
-			bots[cur_bot].pos = bots[cur_bot].pos + cmd.p1 + cmd.p2;
+			bots[cmd.bid].pos = bots[cmd.bid].pos + cmd.p1 + cmd.p2;
 		}
 		else if (cmd.tp == CT_FUSION_P)
 		{
 			for (int a=0; a<kMaxBots; a++)
-				if (bots[a].active && bots[a].pos == bots[cur_bot].pos + cmd.p1)
+				if (bots[a].active && bots[a].pos == bots[cmd.bid].pos + cmd.p1)
 				{
-					bots[cur_bot].seeds |= ( bots[a].seeds | ((long long)1 << a) );
+					bots[cmd.bid].seeds |= ( bots[a].seeds | ((long long)1 << a) );
 					bots[a].active = false;
 					bots[a].seeds = 0;
 					bots[a].pos = { -10, -10, -10 };
@@ -392,21 +377,21 @@ struct SYSTEM_STATE
 		{
 			vector< int > vec;
 			for (int a=0; a<kMaxBots; a++)
-				if ((bots[cur_bot].seeds>>a)&1)
+				if ((bots[cmd.bid].seeds>>a)&1)
 					vec.push_back( a );
-			bots[cur_bot].seeds = 0;
+			bots[cmd.bid].seeds = 0;
 			for (int a=cmd.m+1; a<(int)vec.size(); a++)
-				bots[cur_bot].seeds |= ((long long)1 << vec[a]);
+				bots[cmd.bid].seeds |= ((long long)1 << vec[a]);
 			bots[ vec[0] ].active = true;
-			bots[ vec[0] ].pos = bots[ cur_bot ].pos + cmd.p1;
+			bots[ vec[0] ].pos = bots[ cmd.bid ].pos + cmd.p1;
 			bots[ vec[0] ].seeds = 0;
 			for (int a=1; a<=cmd.m+1; a++)
 				bots[ vec[0] ].seeds |= ((long long)1 << vec[a]);
 		}
 		else if (cmd.tp == CT_FILL)
 		{
-			ss_vm.m[ bots[cur_bot].pos.x + cmd.p1.x ][ bots[cur_bot].pos.y + cmd.p1.y ][ bots[cur_bot].pos.z + cmd.p1.z ] = true;
-		}*/
+			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = true;
+		}
 	}
 } ss;
 
@@ -558,11 +543,10 @@ void load_trace_file( string file )
 		cmd.bid = bots_now[cur_bot].id;
 		if (cmd.tp == CT_UNDEFINED)
 		{
-			cerr << "undefined command\n";
+			//cerr << "undefined command\n";
 			break;
 		}
 		vec.push_back( cmd );
-		
 
 		if (cmd.tp == CT_S_MOVE)
 		{
@@ -585,15 +569,15 @@ void load_trace_file( string file )
 		else if (cmd.tp == CT_FISSION)
 		{
 			vector< int > v;
-			for (int a=0; a<(int)bots_now.size(); a++)
+			for (int a=0; a<kMaxBots; a++)
 				if ((bots_now[cur_bot].seeds>>a)&1)
 					v.push_back( a );
 			long long new_bot_mask = 0;
-			for (int a=1; a<=cmd.m+1; a++)
+			for (int a=1; a<cmd.m+1; a++)
 				new_bot_mask |= ((long long)1 << v[a]);
-			Bot new_bot = { bots_now[ cur_bot ].pos + cmd.p1, new_bot_mask, v[0], true }; 
+			bots_add.push_back( { bots_now[ cur_bot ].pos + cmd.p1, new_bot_mask, v[0], true } );
 			bots_now[cur_bot].seeds = 0;
-			for (int a=cmd.m+1; a<(int)vec.size(); a++)
+			for (int a=cmd.m+1; a<(int)v.size(); a++)
 				bots_now[cur_bot].seeds |= ((long long)1 << v[a]);
 		}
 
@@ -607,7 +591,7 @@ void load_trace_file( string file )
 			{
 				vector< Bot > tmp;
 				for (int b=0; b<(int)bots_now.size(); b++)
-					if (bots_now[b].id != bots_rem[b].id)
+					if (bots_now[b].id != bots_rem[a].id)
 						tmp.push_back( bots_now[b] );
 				bots_now = tmp;
 			}
@@ -618,8 +602,6 @@ void load_trace_file( string file )
 			trace_cmd.push_back( vec );
 			vec.clear();
 		}
-
-		//if (cmd.tp == CT_HALT) break;
 	}
 
 	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
@@ -682,8 +664,13 @@ void nano_display_code()
 	}
 
 	ImGui::Text( "Trace Commands [%d/%d]", cur_cmd, (int)trace_cmd.size() );
+	static bool show_bids = true, show_cmd = true, short_cmd = false, show_coord = true;
+	ImGui::Checkbox( "Bot ids", &show_bids ); ImGui::SameLine();
+	ImGui::Checkbox( "Show cmd", &show_cmd ); ImGui::SameLine();
+	ImGui::Checkbox( "Short cmd", &short_cmd ); ImGui::SameLine();
+	ImGui::Checkbox( "Coords", &show_coord );
 	{
-		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true );
+		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true, ImGuiWindowFlags_HorizontalScrollbar );
 		ImGuiListClipper clipper(trace_cmd.size());
 		while (clipper.Step())
 		{
@@ -697,7 +684,9 @@ void nano_display_code()
 					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
-					ImGui::Button( trace_cmd[i][j].cmd_to_string().c_str() );
+					ImGui::Button( trace_cmd[i][j].cmd_to_string( show_bids, !show_cmd, short_cmd, show_coord ).c_str() );
+					if (ImGui::IsItemHovered())
+						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true ).c_str() );
 					ImGui::PopStyleColor(3);
 				}
 			}
@@ -722,11 +711,12 @@ void nano_display_code()
 		if (ImGui::Button( "Step" ))
 		{
 			trace_speed = 0;
-			/*if (cur_cmd < (int)trace_cmd.size())
+			if (cur_cmd < (int)trace_cmd.size())
 			{
-				ss.perform_command( trace_cmd[cur_cmd] );
+				for (int i=0; i<(int)trace_cmd[cur_cmd].size(); i++)
+					ss.perform_command( trace_cmd[cur_cmd][i] );
 				cur_cmd++;
-			}*/
+			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button( "Stop" ))
@@ -821,7 +811,8 @@ void display_func()
 		for (int a=0; a<trace_speed; a++)
 			if (cur_cmd < (int)trace_cmd.size())
 			{
-				//ss.perform_command( trace_cmd[cur_cmd] );
+				for (int i=0; i<(int)trace_cmd[cur_cmd].size(); i++)
+					ss.perform_command( trace_cmd[cur_cmd][i] );
 				cur_cmd++;
 			}
 	}
