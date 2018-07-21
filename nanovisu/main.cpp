@@ -9,7 +9,14 @@
 #include "imgui_impl_opengl2.h"
 #include "GL/freeglut.h"
 
-#include "dirent.h"
+#ifdef __linux__
+#   include <dirent.h>
+#   include <unistd.h>
+#   define Sleep sleep
+#   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
+#else
+#   include "dirent.h"
+#endif
 
 #include <iostream>
 #include <vector>
@@ -227,7 +234,7 @@ void draw_voxel_matrix( VOXMAT & vm )
 					bool t4 = (c==vm.R-1 || !vm.m[a][b][c+1]);
 					bool t5 = (a==vm.R-1 || !vm.m[a+1][b][c]);
 					bool t6 = (b==vm.R-1 || !vm.m[a][b+1][c]);
-					draw_cube( a*dd-0.5, b*dd-0.5, c*dd-0.5, dd, 0, 2, t1, t2, t3, t4, t5, t6 ); 
+					draw_cube( a*dd-0.5, b*dd-0.5, c*dd-0.5, dd, 0, 2, t1, t2, t3, t4, t5, t6 );
 				}
 	glEnd();
 }
@@ -254,7 +261,7 @@ void my_display_code()
         ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
         ImGui::Checkbox("Another Window", &show_another_window);
 
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
         ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
         if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
@@ -286,12 +293,12 @@ void refresh_list_of_model_files()
 
 	DIR *dir;
 	struct dirent *ent;
-	if ((dir = opendir ("..\\data\\problemsL\\")) != NULL)
+	if ((dir = opendir("..\\data\\problemsL\\")) != NULL)
 	{
-		while ((ent = readdir (dir)) != NULL)
+		while ((ent = readdir(dir)) != NULL)
 			if (ent->d_name[0]=='L')
 				model_files.push_back( string(ent->d_name) );
-		closedir (dir);
+		closedir(dir);
 	}
 }
 
@@ -407,7 +414,7 @@ void display_func()
 		if (ang_beta > 0.49) ang_beta = 0.49;
 		if (ang_beta < -0.49) ang_beta = -0.49;
 	}
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt( cos( ang_beta*pi ) * sin( ang_alpha*pi ) * 2., sin( ang_beta*pi )*2., cos( ang_beta*pi ) * cos( ang_alpha*pi ) * 2.,  /* eye is at */
