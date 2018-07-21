@@ -396,7 +396,7 @@ void refresh_list_of_model_files()
 	if ((dir = opendir("../data/problemsF/")) != NULL)
 	{
 		while ((ent = readdir(dir)) != NULL)
-			if (ent->d_name[0]=='L')
+			if (ent->d_name[0]=='F')
 				model_files.push_back( string(ent->d_name) );
 		closedir(dir);
 	}
