@@ -16,12 +16,7 @@ inline bool check_for_all_subdeltas(Point p, F f)
 
 struct StupidSolver2
 {
-	void moveto(Point p)
-	{
-		w->move(b.pos, p);
-		b.pos = p;
-	}
-
+	
 	void BFS(Point p)
 	{
 		queue<Point> q;

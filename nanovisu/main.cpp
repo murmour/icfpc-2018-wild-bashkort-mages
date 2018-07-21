@@ -16,6 +16,7 @@
 #   include <unistd.h>
 #   define Sleep(ms) usleep(ms * 1000)
 #   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
+#   define sscanf_s sscanf
 #else
 #   include "dirent.h"
 #endif
@@ -479,7 +480,7 @@ void load_model_file( string file )
 	}
 
 	unsigned char xr;
-	fread_s( &xr, 1, 1, 1, f );
+	const size_t sz = fread_s( &xr, 1, 1, 1, f );
 	int r = xr;
 	vm.R = r;
 	vm.filled = 0;
@@ -487,7 +488,7 @@ void load_model_file( string file )
 	for (int a=0; a<((r*r*r+7)/8); a++)
 	{
 		unsigned char z;
-		fread_s( &z, 1, 1, 1, f );
+		const size_t sz = fread_s( &z, 1, 1, 1, f );
 		for (int b=0; b<8; b++)
 		{
 			vm.m[i][j][k] = ((z>>b)&1);
@@ -517,7 +518,7 @@ void load_model_file( string file )
 			{
 				vector< string > seq = parse_filename( string(ent->d_name) );
 
-				if (seq[0]==infseq[0] && seq[1]==infseq[1] && seq[3]=="nbt")
+				if (seq[0]==infseq[0] && seq[1]==infseq[1] && seq[3]=="nbt.gz")
 				{
 					for (int a=0; a<(int)seq.size(); a++)
 						cerr << seq[a].c_str() << " ";
