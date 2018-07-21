@@ -495,7 +495,7 @@ void load_model_file( string file )
 			{
 				vector< string > seq = parse_filename( string(ent->d_name) );
 
-				if (seq[0]==infseq[0] && seq[1]==infseq[1] && seq[3]=="nbt")
+				if (seq[0]==infseq[0] && seq[1]==infseq[1] && seq[3]=="nbt.gz")
 				{
 					for (int a=0; a<(int)seq.size(); a++)
 						cerr << seq[a].c_str() << " ";

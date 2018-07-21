@@ -1,8 +1,5 @@
-#include "trace.h"
 
-#ifdef __linux__
-#   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
-#endif
+#include "trace.h"
 
 
 TraceReader::TraceReader()
@@ -12,13 +9,13 @@ TraceReader::TraceReader()
 
 TraceReader::~TraceReader()
 {
-	if (f) fclose( f );
+	if (f) gzclose( f );
 }
 
 bool TraceReader::open_file( const char *fname )
 {
-	if (f) fclose( f );
-	f = fopen(fname, "rb");
+	if (f) gzclose( f );
+	f = gzopen(fname, "rb");
 	if (!f) return false;
 	return true;
 }
@@ -52,9 +49,9 @@ TraceCommand TraceReader::read_next()
 	if (!f) return re;
 
 	unsigned char ch = 0;
-	size_t sz = fread_s( &ch, 1, 1, 1, f );
+	const int sz = gzread(f, &ch, 1);
 	//cerr << sz << " " << (int)ch << "\n";
-	if (sz==0) return re;
+	if (sz == 0) return re;
 	int code = (ch&7);
 	if (code==7)
 	{
@@ -82,14 +79,14 @@ TraceCommand TraceReader::read_next()
 			re.tp = CT_FISSION;
 			re.p1 = nd_to_point( ch>>3 );
 			unsigned char m;
-			const size_t sz = fread_s( &m, 1, 1, 1, f );
+			const int sz = gzread(f, &m, 1);
 			re.m = m;
 		}
 	}
 	else if (code==4)
 	{
 		unsigned char m;
-		const size_t sz = fread_s( &m, 1, 1, 1, f );
+		const int sz = gzread(f, &m, 1);
 		if ((ch>>3)&1)
 		{
 			re.tp = CT_L_MOVE;
