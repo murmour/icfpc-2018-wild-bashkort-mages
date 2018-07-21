@@ -1,8 +1,70 @@
 #include "common.h"
 
+inline int sign(int x)
+{
+	if (x < 0) return -1;
+	if (x == 0) return 0;
+	return 1;
+}
+
 struct Point
 {
 	int x, y, z;
+
+	Point to(const Point &other) const
+	{
+		return { other.x - x, other.y - y, other.z - z };
+	}
+
+	bool is_near(const Point &other) const
+	{
+		int a = Abs(x - other.x), b = Abs(y - other.y), c = Abs(z - other.z);
+		return a <= 1 && b <= 1 && c <= 1 && a + b + c <= 2;
+	}
+
+	Point dir_to(const Point &other) const
+	{
+		return { sign(other.x - x), sign(other.y - y), sign(other.z - z) };
+	}
+
+	bool operator != (const Point &other) const
+	{
+		return x != other.x || y != other.y || z != other.z;
+	}
+
+	bool operator == (const Point &other) const
+	{
+		return x == other.x && y == other.y && z == other.z;
+	}
+
+	Point operator + (const Point &other) const
+	{
+		return { x + other.x, y + other.y, z + other.z };
+	}
+
+	int n_diff(const Point &other) const
+	{
+		return (x != other.x) + (y != other.y) + (z != other.z);
+	}
+
+	static const Point Origin;
+};
+
+extern const Point kDeltas6[6];
+
+constexpr const int kMaxBots = 20;
+
+struct Bot
+{
+	Point pos;
+	int seeds;
+	int id;
+
+	static Bot Initial()
+	{
+		constexpr int initial_seeds = (1 << kMaxBots) - 2;
+		return { {0, 0, 0}, initial_seeds, 1 };
+	}
 };
 
 const int kMaxR = 250;
@@ -13,6 +75,28 @@ struct Matrix
 	bool m[kMaxR][kMaxR][kMaxR];
 
 	bool load_from_file(const char * filename);
+	void clear(int r);
+
+	bool& operator [] (const Point &p)
+	{
+#ifdef DEBUG
+		Assert(is_valid(p));
+#endif
+		return m[p.x][p.y][p.z];
+	}
+
+	bool operator [] (const Point &p) const
+	{
+#ifdef DEBUG
+		Assert(is_valid(p));
+#endif
+		return m[p.x][p.y][p.z];
+	}
+
+	bool is_valid(const Point &p) const
+	{
+		return p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < R && p.y < R && p.z < R;
+	}
 };
 
 struct TraceWriter
@@ -23,7 +107,7 @@ struct TraceWriter
 	void halt();
 	void wait();
 	void flip();
-	void move(const Point &from, const Point &to, bool reverse_order);
+	void move(const Point &from, const Point &to, bool reverse_order = false);
 	void fusion_p(const Point &from, const Point &to);
 	void fusion_s(const Point &from, const Point &to);
 	void fill(const Point &from, const Point &to);

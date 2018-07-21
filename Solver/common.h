@@ -1,7 +1,7 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define INTERACTIVE_MODE
+#pragma comment(linker, "/STACK:64000000")
 #define _CRT_SECURE_NO_WARNINGS
 
 // uncomment to disable assertion checks
@@ -63,6 +63,8 @@ inline T Sqr(T x)
 {
 	return x * x;
 }
+
+template<class T> inline T Abs(const T &x) { return x >= 0 ? x : -x; }
 
 typedef float f32;
 typedef double f64;

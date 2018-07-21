@@ -2,6 +2,17 @@
 
 using namespace std;
 
+const Point Point::Origin = { 0, 0, 0 };
+
+const Point kDeltas6[6] = {
+	{ -1, 0, 0 },
+	{  1, 0, 0 },
+	{  0,-1, 0 },
+	{  0, 1, 0 },
+	{  0, 0,-1 },
+	{  0, 0, 1 },
+};
+
 TraceWriter::TraceWriter(const char * fname, int R) : R(R)
 {
 	f = fopen(fname, "wb");
@@ -161,6 +172,14 @@ bool Matrix::load_from_file(const char * filename)
 
 	fclose(f);
 	return true;
+}
+
+void Matrix::clear(int r)
+{
+	R = r;
+	for (int i = 0; i < r; i++)
+		for (int j = 0; j < r; j++)
+			memset(m[i][j], 0, r);
 }
 
 map<string, TSolverFun> solvers;
