@@ -297,12 +297,12 @@ int cur_cmd;
 bool trace_mode = false;
 int trace_speed = 1;
 
-constexpr const int kMaxBots = 20;
+constexpr const int kMaxBots = 50;
 
 struct Bot
 {
 	Point pos;
-	int seeds;
+	long long seeds;
 	int id;
 	bool active;
 
@@ -333,7 +333,8 @@ struct SYSTEM_STATE
 					ss_vm.m[a][b][c] = false;
 		cur_bot = -1;
 		for (int a=0; a<kMaxBots; a++)
-			bots[a] = { { 0, 0, 0 }, (1 << kMaxBots) - 2, a+1, a==0 };
+			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a+1, true };
+			else bots[a] = { { -10, -10, -10 }, 0, a+1, false };
 		n_bots = 1;
 	}
 
@@ -371,12 +372,34 @@ struct SYSTEM_STATE
 		}
 		else if (cmd.tp == CT_FUSION_P)
 		{
+			for (int a=0; a<kMaxBots; a++)
+				if (bots[a].active && bots[a].pos == bots[cur_bot].pos + cmd.p1)
+				{
+					bots[cur_bot].seeds |= ( bots[a].seeds | ((long long)1 << a) );
+					bots[a].active = false;
+					bots[a].seeds = 0;
+					bots[a].pos = { -10, -10, -10 };
+					break;
+				}
 		}
 		else if (cmd.tp == CT_FUSION_S)
 		{
+			// this bot should be eliminated by Fusion P command
 		}
 		else if (cmd.tp == CT_FISSION)
 		{
+			vector< int > vec;
+			for (int a=0; a<kMaxBots; a++)
+				if ((bots[cur_bot].seeds>>a)&1)
+					vec.push_back( a );
+			bots[cur_bot].seeds = 0;
+			for (int a=cmd.m+1; a<(int)vec.size(); a++)
+				bots[cur_bot].seeds |= ((long long)1 << vec[a]);
+			bots[ vec[0] ].active = true;
+			bots[ vec[0] ].pos = bots[ cur_bot ].pos + cmd.p1;
+			bots[ vec[0] ].seeds = 0;
+			for (int a=1; a<=cmd.m+1; a++)
+				bots[ vec[0] ].seeds |= ((long long)1 << vec[a]);
 		}
 		else if (cmd.tp == CT_FILL)
 		{
@@ -587,9 +610,7 @@ void nano_display_code()
 		ImGui::EndCombo();
 	}
 
-	//char str[100];
 	ImGui::Text( "Trace Commands [%d/%d]", cur_cmd, (int)trace_cmd.size() );
-	//if (ImGui::TreeNode( str ))
 	{
 		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true );
 		ImGuiListClipper clipper(trace_cmd.size());
@@ -610,7 +631,6 @@ void nano_display_code()
 			}
 		}
 		ImGui::EndChild();
-		//ImGui::TreePop();
 	}
 
 	if (trace_mode)
