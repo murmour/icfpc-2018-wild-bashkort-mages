@@ -195,14 +195,14 @@ bool Matrix::load_from_file(const char * filename)
 	if (!f) return false;
 
 	unsigned char xr;
-	fread_s(&xr, 1, 1, 1, f);
+	const size_t sz = fread_s(&xr, 1, 1, 1, f);
 	int r = xr;
 	R = r;
 	int i = 0, j = 0, k = 0;
 	for (int a = 0; a<((r*r*r + 7) / 8); a++)
 	{
 		unsigned char z;
-		fread_s(&z, 1, 1, 1, f);
+		const size_t sz = fread_s(&z, 1, 1, 1, f);
 		for (int b = 0; b<8; b++)
 		{
 			m[i][j][k] = ((z >> b) & 1);
@@ -246,7 +246,7 @@ void collect_commands(TraceWriter * w, const vector<MemoryTraceWriter>& ww)
 {
 	u32 max_moves = 0;
 	u32 k = ww.size();
-	for (auto &w : ww) max_moves = max(max_moves, w.commands.size());
+	for (auto &w : ww) max_moves = max<u32>(max_moves, w.commands.size());
 	for (u32 i = 0; i < max_moves; i++)
 		for (u32 j = 0; j < k; j++)
 		{
@@ -410,7 +410,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 {
 	Point P = from;
 
-	auto moveto = [&](Point p) 
+	auto moveto = [&](Point p)
 	{
 		w->move(P, p);
 		P = p;
@@ -492,4 +492,3 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 	}
 	return P;
 }
-
