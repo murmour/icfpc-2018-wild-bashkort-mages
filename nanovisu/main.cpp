@@ -1,5 +1,6 @@
 #pragma comment (lib, "glu32.lib")
 #pragma comment (lib, "opengl32.lib")
+#pragma comment (lib, "zdll.lib")
 
 #pragma comment(linker,"/STACK:64000000")
 #define _CRT_SECURE_NO_WARNINGS
@@ -293,7 +294,7 @@ vector< string > model_files;
 string cur_model = "not selected";
 vector< pair< string, string > > trace_files;
 string cur_trace = "not selected";
-vector< TraceCommand > trace_cmd;
+vector< vector< TraceCommand > > trace_cmd;
 int cur_cmd;
 bool trace_mode = false;
 int trace_speed = 1;
@@ -320,8 +321,8 @@ struct SYSTEM_STATE
 
 	long long energy;
 	Bot bots[kMaxBots];
-	int cur_bot;
-	int n_bots;
+	//int cur_bot;
+	//int n_bots;
 
 	void reset()
 	{
@@ -332,16 +333,16 @@ struct SYSTEM_STATE
 			for (int b=0; b<R; b++)
 				for (int c=0; c<R; c++)
 					ss_vm.m[a][b][c] = false;
-		cur_bot = -1;
+		//cur_bot = -1;
 		for (int a=0; a<kMaxBots; a++)
 			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a+1, true };
 			else bots[a] = { { -10, -10, -10 }, 0, a+1, false };
-		n_bots = 1;
+		//n_bots = 1;
 	}
 
 	void perform_command( TraceCommand cmd )
 	{
-		while(1)
+		/*while(1)
 		{
 			cur_bot++;
 			if (cur_bot == kMaxBots)
@@ -405,7 +406,7 @@ struct SYSTEM_STATE
 		else if (cmd.tp == CT_FILL)
 		{
 			ss_vm.m[ bots[cur_bot].pos.x + cmd.p1.x ][ bots[cur_bot].pos.y + cmd.p1.y ][ bots[cur_bot].pos.z + cmd.p1.z ] = true;
-		}
+		}*/
 	}
 } ss;
 
@@ -544,12 +545,81 @@ void load_trace_file( string file )
 		return;
 	}
 	trace_cmd.clear();
+
+	vector< Bot > bots_now;
+	bots_now.push_back( { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, 0, true } );
+	vector< Bot > bots_add;
+	vector< Bot > bots_rem;
+	int cur_bot = 0;
+	vector< TraceCommand > vec;
 	while(1)
 	{
 		TraceCommand cmd = tr.read_next();
-		if (cmd.tp == CT_UNDEFINED) break;
-		trace_cmd.push_back( cmd );
-		if (cmd.tp == CT_HALT) break;
+		cmd.bid = bots_now[cur_bot].id;
+		if (cmd.tp == CT_UNDEFINED)
+		{
+			cerr << "undefined command\n";
+			break;
+		}
+		vec.push_back( cmd );
+		
+
+		if (cmd.tp == CT_S_MOVE)
+		{
+			bots_now[cur_bot].pos = bots_now[cur_bot].pos + cmd.p1;
+		}
+		else if (cmd.tp == CT_L_MOVE)
+		{
+			bots_now[cur_bot].pos = bots_now[cur_bot].pos + cmd.p1 + cmd.p2;
+		}
+		else if (cmd.tp == CT_FUSION_P)
+		{
+			for (int a=0; a<(int)bots_now.size(); a++)
+				if (bots_now[a].pos == bots_now[cur_bot].pos + cmd.p1)
+				{
+					bots_now[cur_bot].seeds |= ( bots_now[a].seeds | ((long long)1 << bots_now[a].id) );
+					bots_rem.push_back( bots_now[a] );
+					break;
+				}
+		}
+		else if (cmd.tp == CT_FISSION)
+		{
+			vector< int > v;
+			for (int a=0; a<(int)bots_now.size(); a++)
+				if ((bots_now[cur_bot].seeds>>a)&1)
+					v.push_back( a );
+			long long new_bot_mask = 0;
+			for (int a=1; a<=cmd.m+1; a++)
+				new_bot_mask |= ((long long)1 << v[a]);
+			Bot new_bot = { bots_now[ cur_bot ].pos + cmd.p1, new_bot_mask, v[0], true }; 
+			bots_now[cur_bot].seeds = 0;
+			for (int a=cmd.m+1; a<(int)vec.size(); a++)
+				bots_now[cur_bot].seeds |= ((long long)1 << v[a]);
+		}
+
+		cur_bot++;
+		if (cur_bot==(int)bots_now.size())
+		{
+			cur_bot = 0;
+			for (int a=0; a<(int)bots_add.size(); a++)
+				bots_now.push_back( bots_add[a] );
+			for (int a=0; a<(int)bots_rem.size(); a++)
+			{
+				vector< Bot > tmp;
+				for (int b=0; b<(int)bots_now.size(); b++)
+					if (bots_now[b].id != bots_rem[b].id)
+						tmp.push_back( bots_now[b] );
+				bots_now = tmp;
+			}
+			bots_add.clear();
+			bots_rem.clear();
+			sort( bots_now.begin(), bots_now.end(),
+				[](const Bot & a, const Bot & b) -> bool { return a.id < b.id; } );
+			trace_cmd.push_back( vec );
+			vec.clear();
+		}
+
+		//if (cmd.tp == CT_HALT) break;
 	}
 
 	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
@@ -619,16 +689,17 @@ void nano_display_code()
 		{
 			for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 			{
-				char str[10];
-				sprintf_s( str, "%d", i );
-				ImGui::Text( str );
-				ImGui::SameLine();
-				float hue = (int)trace_cmd[i].tp*0.08f;
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
-				ImGui::Button( trace_cmd[i].cmd_to_string().c_str() );
-				ImGui::PopStyleColor(3);
+				ImGui::Text( "%d", i );
+				for (int j=0; j<(int)trace_cmd[i].size(); j++)
+				{
+					ImGui::SameLine();
+					float hue = (int)trace_cmd[i][j].tp*0.08f;
+					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
+					ImGui::Button( trace_cmd[i][j].cmd_to_string().c_str() );
+					ImGui::PopStyleColor(3);
+				}
 			}
 		}
 		ImGui::EndChild();
@@ -651,11 +722,11 @@ void nano_display_code()
 		if (ImGui::Button( "Step" ))
 		{
 			trace_speed = 0;
-			if (cur_cmd < (int)trace_cmd.size())
+			/*if (cur_cmd < (int)trace_cmd.size())
 			{
 				ss.perform_command( trace_cmd[cur_cmd] );
 				cur_cmd++;
-			}
+			}*/
 		}
 		ImGui::SameLine();
 		if (ImGui::Button( "Stop" ))
@@ -750,7 +821,7 @@ void display_func()
 		for (int a=0; a<trace_speed; a++)
 			if (cur_cmd < (int)trace_cmd.size())
 			{
-				ss.perform_command( trace_cmd[cur_cmd] );
+				//ss.perform_command( trace_cmd[cur_cmd] );
 				cur_cmd++;
 			}
 	}

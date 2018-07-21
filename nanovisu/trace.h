@@ -100,6 +100,8 @@ struct TraceCommand
 	Point p1 = { 0, 0, 0 }, p2 = { 0, 0, 0 };
 	int m = 0;
 
+	int bid = -1;
+
 	string cmd_to_string()
 	{
 		if (tp==CT_HALT) return "Halt";
