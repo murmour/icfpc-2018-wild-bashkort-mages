@@ -298,8 +298,9 @@ vector< vector< TraceCommand > > trace_cmd;
 int cur_cmd;
 bool trace_mode = false;
 int trace_speed = 1;
+int picked_bot = -1;
 
-constexpr const int kMaxBots = 50;
+constexpr const int kMaxBots = 40;
 
 struct Bot
 {
@@ -332,8 +333,8 @@ struct SYSTEM_STATE
 				for (int c=0; c<R; c++)
 					ss_vm.m[a][b][c] = false;
 		for (int a=0; a<kMaxBots; a++)
-			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a+1, true };
-			else bots[a] = { { -10, -10, -10 }, 0, a+1, false };
+			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a, true };
+			else bots[a] = { { -10, -10, -10 }, 0, a, false };
 	}
 
 	void perform_command( TraceCommand cmd )
@@ -385,7 +386,7 @@ struct SYSTEM_STATE
 			bots[ vec[0] ].active = true;
 			bots[ vec[0] ].pos = bots[ cmd.bid ].pos + cmd.p1;
 			bots[ vec[0] ].seeds = 0;
-			for (int a=1; a<=cmd.m+1; a++)
+			for (int a=1; a<cmd.m+1; a++)
 				bots[ vec[0] ].seeds |= ((long long)1 << vec[a]);
 		}
 		else if (cmd.tp == CT_FILL)
@@ -746,6 +747,57 @@ void nano_display_code()
 		}
 	}
 
+	int n_bots = 0;
+	for (int a=0; a<kMaxBots; a++)
+		if (ss.bots[a].active)
+			n_bots++;
+	ImGui::Text( "Active bots: %d", n_bots );
+	{
+		ImGui::BeginChild( "active", ImVec2(0, ImGui::GetFontSize() * 10), true );
+		ImGui::Columns( 3, "cols", false );
+		ImGui::SetColumnWidth( 0, 50.f );
+		ImGui::SetColumnWidth( 1, 100.f );
+		ImGui::SetColumnWidth( 2, 400.f );
+		for (int a=0; a<kMaxBots; a++)
+			if (ss.bots[a].active)
+			{
+				string see;
+				for (int b=0; b<kMaxBots; b++)
+				{
+					if (b>0 && b%20==0) see.push_back( ' ' );
+					see.push_back( ((ss.bots[a].seeds>>b)&1) ? '1' : '0' );
+				}
+
+				bool flag = (picked_bot == ss.bots[a].id);
+				if (flag)
+				{
+					float hue = 0.1f;
+					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
+				}
+				char ch[10];
+				sprintf_s( ch, "id=%d", ss.bots[a].id );
+				if ( ImGui::SmallButton( ch ) )
+				{
+					cerr << "picked " << ss.bots[a].id << "\n";
+					picked_bot = ss.bots[a].id;
+				}
+				if (flag)
+					ImGui::PopStyleColor(3);
+				ImGui::NextColumn();
+				//ImGui::SameLine();
+
+				ImGui::Text( "[%d,%d,%d]", ss.bots[a].pos.x, ss.bots[a].pos.y, ss.bots[a].pos.z );
+				ImGui::NextColumn();
+				ImGui::Text( "%s", see.c_str() );
+				ImGui::NextColumn();
+			}
+		ImGui::Columns( 1 );
+		ImGui::EndChild();
+	}
+	ImGui::Text( "Picked bot: %d", picked_bot );
+
 	ImGui::End();
 }
 
@@ -806,7 +858,7 @@ void display_func()
 				draw_sphere(
 					ss.bots[a].pos.x*dd + dd*0.5 - 0.5,
 					ss.bots[a].pos.y*dd + dd*0.5 - 0.5,
-					ss.bots[a].pos.z*dd + dd*0.5 - 0.5, dd * 0.4, 8 );
+					ss.bots[a].pos.z*dd + dd*0.5 - 0.5, dd * 0.4, a==picked_bot ? 7 : 8 );
 
 		for (int a=0; a<trace_speed; a++)
 			if (cur_cmd < (int)trace_cmd.size())
