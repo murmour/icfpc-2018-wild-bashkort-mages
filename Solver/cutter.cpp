@@ -163,7 +163,7 @@ struct CutterSolver
 		int n = 2; // number of bots
 		if (System::HasArg("bots"))
 		{
-			int n = atoi(System::GetArgValue("bots").c_str());
+			n = atoi(System::GetArgValue("bots").c_str());
 			assert(n >= 1 && n <= 20);
 		}
 		int weight[kMaxR] = { 0 };
