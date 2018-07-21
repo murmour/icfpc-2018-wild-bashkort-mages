@@ -64,6 +64,8 @@ struct Point
 
 extern const Point kDeltas6[6];
 
+const std::vector<Point>& Deltas26();
+
 constexpr const int kMaxBots = 20;
 
 struct Bot

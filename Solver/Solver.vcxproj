@@ -115,6 +115,7 @@
     <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stupid.cpp" />
+    <ClCompile Include="stupid2.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="trace_writer.cpp" />
   </ItemGroup>
