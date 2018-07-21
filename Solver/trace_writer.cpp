@@ -17,18 +17,18 @@ const Point kDeltas6[6] = {
 	{  0, 0, 1 },
 };
 
-TraceWriter::TraceWriter(const char * fname, int R) : R(R)
+FileTraceWriter::FileTraceWriter(const char * fname, int R) : R(R)
 {
 	f = fopen(fname, "wb");
 	energy = 3 * R * R * R + 20;
 }
 
-TraceWriter::~TraceWriter()
+FileTraceWriter::~FileTraceWriter()
 {
 	fclose(f);
 }
 
-void TraceWriter::next()
+void FileTraceWriter::next()
 {
 	Assert(n_bots > 0);
 	cur_bot++;
@@ -41,7 +41,7 @@ void TraceWriter::next()
 	}
 }
 
-void TraceWriter::halt()
+void FileTraceWriter::halt()
 {
 	u8 data = 255;
 	fwrite(&data, 1, 1, f);
@@ -51,14 +51,14 @@ void TraceWriter::halt()
 	next();
 }
 
-void TraceWriter::wait()
+void FileTraceWriter::wait()
 {
 	u8 data = 254;
 	fwrite(&data, 1, 1, f);
 	next();
 }
 
-void TraceWriter::flip()
+void FileTraceWriter::flip()
 {
 	u8 data = 253;
 	fwrite(&data, 1, 1, f);
@@ -66,13 +66,13 @@ void TraceWriter::flip()
 	next();
 }
 
-void TraceWriter::move(const Point & from, const Point & to, bool reverse_order)
+void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
 {
 	auto write_long = [&](int from, int to, int q)
 	{
 		Assert(from != to);
 		Assert(abs(from - to) <= 15);
-		u8 data[2] = { (q << 4) + 4, to - from + 15 };
+		u8 data[2] = { u8((q << 4) + 4), u8(to - from + 15) };
 		fwrite(&data, 1, 2, f);
 		energy += 2 * abs(from - to);
 	};
@@ -86,7 +86,7 @@ void TraceWriter::move(const Point & from, const Point & to, bool reverse_order)
 			swap(to1, to2);
 			swap(q1, q2);
 		}
-		u8 data[2] = { (q2 << 6) + (q1 << 4) + 12, ((to2 - from2 + 5) << 4) + (to1 - from1 + 5) };
+		u8 data[2] = { u8((q2 << 6) + (q1 << 4) + 12), u8(((to2 - from2 + 5) << 4) + (to1 - from1 + 5)) };
 		fwrite(&data, 1, 2, f);
 		energy += 2 * (abs(from1 - to1) + 2 + abs(from2 - to2));
 	};
@@ -114,7 +114,7 @@ inline int get_nd(const Point &from, const Point &to)
 	return (to.x - from.x + 1) * 9 + (to.y - from.y + 1) * 3 + to.z - from.z + 1;
 }
 
-void TraceWriter::fusion_p(const Point & from, const Point & to)
+void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 7;
 	fwrite(&data, 1, 1, f);
@@ -124,22 +124,23 @@ void TraceWriter::fusion_p(const Point & from, const Point & to)
 	next();
 }
 
-void TraceWriter::fusion_s(const Point & from, const Point & to)
+void FileTraceWriter::fusion_s(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 6;
 	fwrite(&data, 1, 1, f);
 	next();
 }
 
-void TraceWriter::fill(const Point & from, const Point & to)
+void FileTraceWriter::fill(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 3;
 	fwrite(&data, 1, 1, f);
 	energy += 12;
+	n_filled++;
 	next();
 }
 
-void TraceWriter::fission(const Point & from, const Point & to, int m)
+void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 {
 	u8 data = (get_nd(from, to) << 3) + 5;
 	fwrite(&data, 1, 1, f);
@@ -220,3 +221,218 @@ TSolverFun GetSolver(const std::string id)
 		return nullptr;
 	return (*solvers)[id];
 }
+
+void MemoryTraceWriter::halt()
+{
+	commands.push_back({ 0, 0, 0, cmdHalt });
+}
+
+void MemoryTraceWriter::wait()
+{
+	commands.push_back({ 0, 0, 0, cmdWait });
+}
+
+void MemoryTraceWriter::flip()
+{
+	commands.push_back({ 0, 0, 0, cmdFlip });
+}
+
+void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
+{
+	auto d = from.to(to);
+	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), reverse_order ? cmdMoveR : cmdMove });
+}
+
+void MemoryTraceWriter::fusion_p(const Point & from, const Point & to)
+{
+	auto d = from.to(to);
+	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFusionP });
+}
+
+void MemoryTraceWriter::fusion_s(const Point & from, const Point & to)
+{
+	auto d = from.to(to);
+	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFusionS });
+}
+
+void MemoryTraceWriter::fill(const Point & from, const Point & to)
+{
+	auto d = from.to(to);
+	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFill });
+}
+
+void MemoryTraceWriter::fission(const Point & from, const Point & to, int m)
+{
+	auto d = from.to(to);
+	commands.push_back({ i8(d.x + 1 + (m << 2)), i8(d.y), i8(d.z), cmdFission });
+}
+
+static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
+{
+	Point P = from;
+
+	auto moveto = [&](Point p)
+	{
+		w->move(P, p);
+		P = p;
+	};
+
+	static Matrix *temp_;
+	if (!temp_)
+	{
+		temp_ = new Matrix();
+		temp_->clear(env->R);
+	}
+	Matrix &temp = *temp_;
+
+	queue<Point> q;
+	vector<Point> used;
+	auto push = [&](Point t, char dir)
+	{
+		if (temp[t]) return;
+		temp[t] = dir;
+		q.push(t);
+		used.push_back(t);
+	};
+
+	auto check = [&](Point t)
+	{
+		return exact ? t == to : t.is_near(to);
+	};
+
+	push(from, 10);
+	while (!q.empty())
+	{
+		auto t = q.front(); q.pop();
+		if (check(t))
+		{
+			// restore path
+			vector<int> path;
+			auto tt = t;
+			while (t != from)
+			{
+				int dir = temp[t] - 1;
+				Assert(dir >= 0 && dir < 6);
+				path.push_back(dir);
+				t = t - kDeltas6[dir];
+			}
+			reverse(path.begin(), path.end());
+			int prev = -1, cnt = 0;
+			for (auto d : path)
+			{
+				if (d == prev && cnt < 15)
+					cnt++;
+				else
+				{
+					if (cnt > 0) moveto(P + kDeltas6[prev] * cnt);
+					prev = d;
+					cnt = 1;
+				}
+			}
+			if (cnt > 0) moveto(P + kDeltas6[prev] * cnt);
+			Assert(P == tt);
+
+			// cleanup
+			for (auto &p : used) temp[p] = 0;
+			return P;
+		}
+		for (int i = 0; i < 6; i++)
+		{
+			auto p = t + kDeltas6[i];
+			if (!(*env).is_valid(p)) continue;
+			if (!(*env)[p])
+				push(p, i + 1);
+		}
+	}
+	Assert(false);
+	return from;
+}
+
+
+Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
+{
+	Point P = from;
+
+	auto moveto = [&](Point p) 
+	{
+		w->move(P, p);
+		P = p;
+	};
+
+	std::vector<Command> res;
+	if (!exact && from == to)
+	{
+		for (auto d : kDeltas6)
+		{
+			Point a = from + d;
+			if (!env->is_valid(a)) continue;
+			if (!(*env)[a])
+			{
+				moveto(a);
+				return P;
+			}
+		}
+		Assert(false);
+	}
+
+	auto dir = from.dir_to(to);
+	while (exact ? P != to : !P.is_near(to))
+	{
+		// try x
+		Point a = P;
+		int k = 0;
+		while (a.x != to.x && k < 15)
+		{
+			Point t = a;
+			t.x += dir.x;
+			if ((*env)[t]) break;
+			if (!exact && t == to) break;
+			a = t;
+			k++;
+		}
+		if (k > 0)
+		{
+			moveto(a);
+			continue;
+		}
+
+		// try y
+		a = P;
+		k = 0;
+		while (a.y != to.y && k < 15)
+		{
+			Point t = a;
+			t.y += dir.y;
+			if ((*env)[t]) break;
+			if (!exact && t == to) break;
+			a = t;
+			k++;
+		}
+		if (k > 0)
+		{
+			moveto(a);
+			continue;
+		}
+
+		// try z
+		a = P;
+		k = 0;
+		while (a.z != to.z && k < 15)
+		{
+			Point t = a;
+			t.z += dir.z;
+			if ((*env)[t]) break;
+			if (!exact && t == to) break;
+			a = t;
+			k++;
+		}
+		if (k > 0)
+		{
+			moveto(a);
+			continue;
+		}
+		return bfs_reach(P, to, env, w, exact);
+	}
+	return P;
+}
+

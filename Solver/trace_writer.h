@@ -52,8 +52,6 @@ struct Point
 		return { x - other.x, y - other.y, z - other.z };
 	}
 
-
-
 	int n_diff(const Point &other) const
 	{
 		return (x != other.x) + (y != other.y) + (z != other.z);
@@ -111,12 +109,69 @@ struct Matrix
 	{
 		return p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < R && p.y < R && p.z < R;
 	}
+
+	int get_filled_count() const
+	{
+		int res = 0;
+		for (int x = 0; x < R; x++)
+			for (int y = 0; y < R; y++)
+				for (int z = 0; z < R; z++)
+					if (m[x][y][z])
+						res++;
+		return res;
+	}
+};
+
+enum CommandType : u8
+{
+	cmdHalt,
+	cmdWait,
+	cmdFlip,
+	cmdMove,
+	cmdMoveR,
+	cmdFusionP,
+	cmdFusionS,
+	cmdFill,
+	cmdFission
+};
+
+struct Command
+{
+	i8 dx, dy, dz;
+	CommandType ty;
 };
 
 struct TraceWriter
 {
-	TraceWriter(const char *fname, int R);
-	~TraceWriter();
+	virtual void halt() = 0;
+	virtual void wait() = 0;
+	virtual void flip() = 0;
+	virtual void move(const Point &from, const Point &to, bool reverse_order = false) = 0;
+	virtual void fusion_p(const Point &from, const Point &to) = 0;
+	virtual void fusion_s(const Point &from, const Point &to) = 0;
+	virtual void fill(const Point &from, const Point &to) = 0;
+	virtual void fission(const Point &from, const Point &to, int m) = 0;
+	virtual ~TraceWriter() {}
+};
+
+struct MemoryTraceWriter : public TraceWriter
+{
+	void halt();
+	void wait();
+	void flip();
+	void move(const Point &from, const Point &to, bool reverse_order = false);
+	void fusion_p(const Point &from, const Point &to);
+	void fusion_s(const Point &from, const Point &to);
+	void fill(const Point &from, const Point &to);
+	void fission(const Point &from, const Point &to, int m);
+
+	std::vector<Command> commands;
+};
+
+struct FileTraceWriter : public TraceWriter
+{
+	FileTraceWriter(const char *fname, int R);
+	~FileTraceWriter();
 
 	void halt();
 	void wait();
@@ -128,6 +183,7 @@ struct TraceWriter
 	void fission(const Point &from, const Point &to, int m);
 
 	i64 get_energy() const { return energy; }
+	int get_filled_count() const { return n_filled; }
 private:
 	void next();
 
@@ -137,10 +193,14 @@ private:
 	int n_bots_next = 1; // number of bots in the next move
 	int cur_bot = 0;
 	i64 energy = 0; // total energy spent
+	int n_filled = 0;
 	int R; // resolution
 };
 
-typedef std::function<int(const Matrix &target, TraceWriter &writer)> TSolverFun;
+// returns the end point
+Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
+
+typedef std::function<int(const Matrix *target, TraceWriter *writer)> TSolverFun;
 
 void RegisterSolver(const std::string id, TSolverFun f);
 TSolverFun GetSolver(const std::string id);

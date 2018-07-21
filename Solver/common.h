@@ -60,7 +60,7 @@ inline int imin(int a, int b) { return std::min(a, b); }
 
 inline void report_fail(const char *file, int line)
 {
-	fprintf(stderr, "Assertion failure in %s at line %d", file, line);
+	fprintf(stderr, "Assertion failure in %s at line %d\n", file, line);
 	exit(13);
 }
 

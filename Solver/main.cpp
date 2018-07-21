@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	TraceWriter tw(out_file.c_str(), model->R);
+	FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R);
 
 	string solver = "stupid"; // default solver
 	if (System::HasArg("solver"))
@@ -28,8 +28,10 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
-	solver_f(*model, tw);
+	solver_f(model, tw);
 
-	printf("%lld", tw.get_energy()); // print total energy spent
+	Assert(tw->get_filled_count() == model->get_filled_count());
+
+	printf("%lld", tw->get_energy()); // print total energy spent
 	return 0;
 }

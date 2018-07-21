@@ -189,15 +189,25 @@ struct StupidSolver
 
 		reach({ 0, 0, 0 }, true);
 
+		validate();
 		w->halt();
 		return 0;
 	}
 
-	int operator () (const Matrix &m, TraceWriter &w)
+	void validate()
 	{
-		this->m = &m;
-		this->w = &w;
-		R = m.R;
+		for (int x = 0; x < R; x++)
+			for (int y = 0; y < R; y++)
+				for (int z = 0; z < R; z++)
+					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
+						assert(false);
+	}
+
+	int operator () (const Matrix *m, TraceWriter *w)
+	{
+		this->m = m;
+		this->w = w;
+		R = m->R;
 		return solve();
 	}
 
@@ -209,7 +219,7 @@ struct StupidSolver
 	Bot b;
 };
 
-int stupid_solver(const Matrix &target, TraceWriter &writer)
+int stupid_solver(const Matrix *target, TraceWriter *writer)
 {
 	auto solver = new StupidSolver();
 	int res = (*solver)(target, writer);
