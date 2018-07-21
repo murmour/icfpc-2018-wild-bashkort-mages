@@ -7,6 +7,10 @@
 #include <vector>
 #include <iostream>
 
+#ifdef __linux__
+#   define sprintf_s sprintf
+#endif
+
 using namespace std;
 
 template<class T> inline T Abs(const T &x) { return x >= 0 ? x : -x; }

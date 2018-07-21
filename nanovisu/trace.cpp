@@ -1,5 +1,10 @@
 #include "trace.h"
 
+#ifdef __linux__
+#   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
+#endif
+
+
 TraceReader::TraceReader()
 {
 	f = 0;
@@ -77,14 +82,14 @@ TraceCommand TraceReader::read_next()
 			re.tp = CT_FISSION;
 			re.p1 = nd_to_point( ch>>3 );
 			unsigned char m;
-			fread_s( &m, 1, 1, 1, f );
+			const size_t sz = fread_s( &m, 1, 1, 1, f );
 			re.m = m;
 		}
 	}
 	else if (code==4)
 	{
 		unsigned char m;
-		fread_s( &m, 1, 1, 1, f );
+		const size_t sz = fread_s( &m, 1, 1, 1, f );
 		if ((ch>>3)&1)
 		{
 			re.tp = CT_L_MOVE;
