@@ -48,9 +48,11 @@ if __name__ == '__main__':
             continue
 
         pts.sort(key = lambda pt: pt['energy'])
-        best = pts[0]
-        print('%s%s: %d (%s)' % (best['prefix'], best['id'], best['energy'], best['solver']))
+        def print_pt(pt):
+            return '%s(%d)' % (pt['solver'], pt['energy'])
+        print('%s%s: %s' % (p['prefix'], p['id'], ', '.join(print_pt(pt) for pt in pts[:4])))
 
+        best = pts[0]
         total_energy += best['energy']
 
     print()
