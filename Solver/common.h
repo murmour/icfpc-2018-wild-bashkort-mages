@@ -32,7 +32,7 @@
 
 //#include "log.h"
 
-#define Assert(x) if (!(x)) throw (__FILE__ + __LINE__)
+#define Assert(x) if (!(x)) report_fail(__FILE__, __LINE__)
 #ifdef INTERACTIVE_MODE
 #define dassert(x)
 #else
@@ -57,6 +57,12 @@
 #endif
 
 inline int imin(int a, int b) { return std::min(a, b); }
+
+inline void report_fail(const char *file, int line)
+{
+	fprintf(stderr, "Assertion failure in %s at line %d", file, line);
+	exit(13);
+}
 
 template<typename T>
 inline T Sqr(T x)
