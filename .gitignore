@@ -19,6 +19,7 @@ log_*
 *.log
 *.html
 *.vs
+*.nbt
 manipulator/tmp
 Solver/solver
 nanovisu/nanovisu

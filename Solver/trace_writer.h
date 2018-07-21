@@ -122,10 +122,56 @@ struct Matrix
 	}
 };
 
+enum CommandType : u8
+{
+	cmdHalt,
+	cmdWait,
+	cmdFlip,
+	cmdMove,
+	cmdMoveR,
+	cmdFusionP,
+	cmdFusionS,
+	cmdFill,
+	cmdFission
+};
+
+struct Command
+{
+	i8 dx, dy, dz;
+	CommandType ty;
+};
+
 struct TraceWriter
 {
-	TraceWriter(const char *fname, int R);
-	~TraceWriter();
+	virtual void halt() = 0;
+	virtual void wait() = 0;
+	virtual void flip() = 0;
+	virtual void move(const Point &from, const Point &to, bool reverse_order = false) = 0;
+	virtual void fusion_p(const Point &from, const Point &to) = 0;
+	virtual void fusion_s(const Point &from, const Point &to) = 0;
+	virtual void fill(const Point &from, const Point &to) = 0;
+	virtual void fission(const Point &from, const Point &to, int m) = 0;
+	virtual ~TraceWriter() {}
+};
+
+struct MemoryTraceWriter : public TraceWriter
+{
+	void halt();
+	void wait();
+	void flip();
+	void move(const Point &from, const Point &to, bool reverse_order = false);
+	void fusion_p(const Point &from, const Point &to);
+	void fusion_s(const Point &from, const Point &to);
+	void fill(const Point &from, const Point &to);
+	void fission(const Point &from, const Point &to, int m);
+
+	std::vector<Command> commands;
+};
+
+struct FileTraceWriter : public TraceWriter
+{
+	FileTraceWriter(const char *fname, int R);
+	~FileTraceWriter();
 
 	void halt();
 	void wait();
@@ -151,7 +197,10 @@ private:
 	int R; // resolution
 };
 
-typedef std::function<int(const Matrix &target, TraceWriter &writer)> TSolverFun;
+// returns the end point
+Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
+
+typedef std::function<int(const Matrix *target, TraceWriter *writer)> TSolverFun;
 
 void RegisterSolver(const std::string id, TSolverFun f);
 TSolverFun GetSolver(const std::string id);

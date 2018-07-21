@@ -203,11 +203,11 @@ struct StupidSolver
 						assert(false);
 	}
 
-	int operator () (const Matrix &m, TraceWriter &w)
+	int operator () (const Matrix *m, TraceWriter *w)
 	{
-		this->m = &m;
-		this->w = &w;
-		R = m.R;
+		this->m = m;
+		this->w = w;
+		R = m->R;
 		return solve();
 	}
 
@@ -219,7 +219,7 @@ struct StupidSolver
 	Bot b;
 };
 
-int stupid_solver(const Matrix &target, TraceWriter &writer)
+int stupid_solver(const Matrix *target, TraceWriter *writer)
 {
 	auto solver = new StupidSolver();
 	int res = (*solver)(target, writer);
