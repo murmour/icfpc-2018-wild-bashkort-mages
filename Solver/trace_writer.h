@@ -70,21 +70,6 @@ const std::vector<Point>& Deltas26();
 
 constexpr const int kMaxBots = 20;
 
-struct Bot
-{
-	Point pos;
-	int seeds;
-	int id;
-	int parent;
-	int step;
-
-	static Bot Initial()
-	{
-		constexpr int initial_seeds = (1 << kMaxBots) - 1;
-		return { {0, 0, 0}, initial_seeds, 1, -1, 0 };
-	}
-};
-
 const int kMaxR = 250;
 
 struct Matrix
@@ -222,6 +207,31 @@ private:
 	int R; // resolution
 };
 
+struct Bot
+{
+	Point pos;
+	int seeds;
+	int id;
+	int parent = -1;
+	int step = 0;
+	MemoryTraceWriter mw;
+	int left = -1, right = -1;
+
+	Bot() : pos(Point::Origin), seeds(0), id(-1) {}
+
+	Bot(Point pos, int seeds, int id) : pos(pos), seeds(seeds), id(id)
+	{
+		parent = -1;
+		step = 0;
+	}
+
+	static Bot Initial()
+	{
+		constexpr int initial_seeds = (1 << kMaxBots) - 2;
+		return Bot({ 0, 0, 0 }, initial_seeds, 0);
+	}
+};
+
 // returns the end point
 Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
 
@@ -243,10 +253,11 @@ inline int low_bit(int seeds)
 
 inline int make_seeds(int a, int b)
 {
-	return ((1 << b) - 1) ^ ((1 << a) - 1);
+	return ((1 << (b + 1)) - 1) ^ ((1 << a) - 1);
 }
 
-void collect_commands(TraceWriter *w, const std::vector<MemoryTraceWriter> &ww);
+// clears commands after collecting
+void collect_commands(TraceWriter *w, const std::vector<Bot*> &bots);
 
 void RegisterSolver(const std::string id, TSolverFun f);
 TSolverFun GetSolver(const std::string id);

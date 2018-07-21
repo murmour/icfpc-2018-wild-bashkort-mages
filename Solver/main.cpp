@@ -3,13 +3,23 @@
 
 using namespace std;
 
+char get_type(string s)
+{
+	for (u32 i = s.size(); i >= 0; i--) if (s[i] == '/' || s[i] == '\\')
+		return s[i + 2];
+	return s[1];
+}
+
 int main(int argc, char** argv)
 {
 	System::ParseArgs(argc, argv);
 	auto out_file = System::GetArgValue("out");
 	auto in_file = System::GetArgValue("in");
 
+	if (get_type(in_file) != 'A') return 42;
+
 	Matrix *model = new Matrix();
+
 	if (!model->load_from_file(in_file.c_str()))
 	{
 		fprintf(stderr, "Failed to load model '%s'", in_file.c_str());
