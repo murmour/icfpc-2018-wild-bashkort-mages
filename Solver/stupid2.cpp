@@ -2,6 +2,18 @@
 
 using namespace std;
 
+template<typename F>
+inline bool check_for_all_subdeltas(Point p, F f)
+{
+	if (p.x && !f({ p.x, 0, 0 })) return false;
+	if (p.y && !f({ 0, p.y, 0 })) return false;
+	if (p.z && !f({ 0, 0, p.z })) return false;
+	if (p.x && p.y & !f({ p.x, p.y, 0 })) return false;
+	if (p.x && p.z & !f({ p.x, 0, p.z })) return false;
+	if (p.y && p.z & !f({ 0, p.y, p.z })) return false;
+	return true;
+}
+
 struct StupidSolver2
 {
 	void moveto(Point p)
@@ -169,12 +181,16 @@ struct StupidSolver2
 			reach(t);
 			w->fill(b.pos, t);
 			cur[t] = true;
-			//for (auto d : Deltas26())
-			for (auto d : kDeltas6)
+			for (auto d : Deltas26())
+			//for (auto d : kDeltas6)
 			{
 				auto a = t + d;
 				if (!cur.is_valid(a)) continue;
-				if ((*m)[a]) push(a);
+				if ((*m)[a])
+				{
+					if (check_for_all_subdeltas(d, [&](Point b) { return (*m)[t + b]; }))
+						push(a);
+				}
 			}
 		}
 	}
@@ -233,4 +249,4 @@ int stupid2_solver(const Matrix &target, TraceWriter &writer)
 	return res;
 }
 
-REG_SOLVER("stupid2", stupid2_solver);
+REG_SOLVER("stupid3", stupid2_solver);

@@ -194,11 +194,12 @@ const vector<Point>& Deltas26()
 	static vector<Point> deltas;
 	if (deltas.empty())
 	{
-		for (int x = -1; x <= 1; x++)
-			for (int y = -1; y <= 1; y++)
-				for (int z = -1; z <= 1; z++)
-					if (x || y || z)
-						deltas.push_back({ x, y, z });
+		for (int d = 1; d <= 3; d++)
+			for (int x = -1; x <= 1; x++)
+				for (int y = -1; y <= 1; y++)
+					for (int z = -1; z <= 1; z++)
+						if (Abs(x) + Abs(y) + Abs(z) == d)
+							deltas.push_back({ x, y, z });
 	}
 	return deltas;
 }
