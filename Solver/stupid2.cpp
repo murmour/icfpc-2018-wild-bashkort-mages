@@ -93,7 +93,7 @@ struct StupidSolver2
 			for (int y = 0; y < R; y++)
 				for (int z = 0; z < R; z++)
 					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
-						assert(false);
+						Assert(false);
 	}
 
 	const Matrix *m;
