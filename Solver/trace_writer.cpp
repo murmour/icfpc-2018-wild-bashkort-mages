@@ -152,6 +152,43 @@ void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 	next();
 }
 
+void FileTraceWriter::do_command(Command cmd, int bot_id)
+{
+	Assert(bot_id == cur_bot);
+	switch (cmd.ty)
+	{
+	case cmdHalt:
+		halt();
+		break;
+	case cmdWait:
+		wait();
+		break;
+	case cmdFlip:
+		flip();
+		break;
+	case cmdMove:
+		move(Point::Origin, { cmd.dx, cmd.dy, cmd.dz }, false);
+		break;
+	case cmdMoveR:
+		move(Point::Origin, { cmd.dx, cmd.dy, cmd.dz }, true);
+		break;
+	case cmdFusionP:
+		fusion_p(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
+		break;
+	case cmdFusionS:
+		fusion_s(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
+		break;
+	case cmdFill:
+		fill(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
+		break;
+	case cmdFission:
+		fission(Point::Origin, { (cmd.dx & 3) - 1, cmd.dy, cmd.dz }, cmd.dx >> 2);
+		break;
+	default:
+		Assert(false);
+	}
+}
+
 bool Matrix::load_from_file(const char * filename)
 {
 	FILE * f = fopen(filename, "rb");
@@ -203,6 +240,21 @@ const vector<Point>& Deltas26()
 							deltas.push_back({ x, y, z });
 	}
 	return deltas;
+}
+
+void collect_commands(TraceWriter * w, const vector<MemoryTraceWriter>& ww)
+{
+	u32 max_moves = 0;
+	u32 k = ww.size();
+	for (auto &w : ww) max_moves = max(max_moves, w.commands.size());
+	for (u32 i = 0; i < max_moves; i++)
+		for (u32 j = 0; j < k; j++)
+		{
+			if (i >= ww[j].commands.size())
+				w->wait();
+			else
+				w->do_command(ww[j].commands[i], j);
+		}
 }
 
 void RegisterSolver(const std::string id, TSolverFun f)
@@ -265,6 +317,11 @@ void MemoryTraceWriter::fission(const Point & from, const Point & to, int m)
 {
 	auto d = from.to(to);
 	commands.push_back({ i8(d.x + 1 + (m << 2)), i8(d.y), i8(d.z), cmdFission });
+}
+
+void MemoryTraceWriter::do_command(Command cmd, int bot_id)
+{
+	commands.push_back(cmd);
 }
 
 static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
@@ -339,8 +396,8 @@ static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w,
 		for (int i = 0; i < 6; i++)
 		{
 			auto p = t + kDeltas6[i];
-			if (!(*env).is_valid(p)) continue;
-			if (!(*env)[p])
+			if (!env->is_valid(p)) continue;
+			if (!env->get(p))
 				push(p, i + 1);
 		}
 	}
@@ -366,7 +423,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		{
 			Point a = from + d;
 			if (!env->is_valid(a)) continue;
-			if (!(*env)[a])
+			if (!env->get(a))
 			{
 				moveto(a);
 				return P;
@@ -385,7 +442,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		{
 			Point t = a;
 			t.x += dir.x;
-			if ((*env)[t]) break;
+			if (env->get(t)) break;
 			if (!exact && t == to) break;
 			a = t;
 			k++;
@@ -403,7 +460,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		{
 			Point t = a;
 			t.y += dir.y;
-			if ((*env)[t]) break;
+			if (env->get(t)) break;
 			if (!exact && t == to) break;
 			a = t;
 			k++;
@@ -421,7 +478,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		{
 			Point t = a;
 			t.z += dir.z;
-			if ((*env)[t]) break;
+			if (env->get(t)) break;
 			if (!exact && t == to) break;
 			a = t;
 			k++;

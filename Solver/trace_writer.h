@@ -71,11 +71,13 @@ struct Bot
 	Point pos;
 	int seeds;
 	int id;
+	int parent;
+	int step;
 
 	static Bot Initial()
 	{
-		constexpr int initial_seeds = (1 << kMaxBots) - 2;
-		return { {0, 0, 0}, initial_seeds, 1 };
+		constexpr int initial_seeds = (1 << kMaxBots) - 1;
+		return { {0, 0, 0}, initial_seeds, 1, -1, 0 };
 	}
 };
 
@@ -85,6 +87,7 @@ struct Matrix
 {
 	int R;
 	char m[kMaxR][kMaxR][kMaxR];
+	int XL = -1, XR = -1;
 
 	bool load_from_file(const char * filename);
 	void clear(int r);
@@ -94,6 +97,15 @@ struct Matrix
 #ifdef DEBUG
 		Assert(is_valid(p));
 #endif
+		return m[p.x][p.y][p.z];
+	}
+
+	bool get(const Point &p) const
+	{
+#ifdef DEBUG
+		Assert(is_valid(p));
+#endif
+		if (XL != -1 && (p.x < XL || p.x > XR)) return true;
 		return m[p.x][p.y][p.z];
 	}
 
@@ -119,6 +131,12 @@ struct Matrix
 					if (m[x][y][z])
 						res++;
 		return res;
+	}
+
+	void set_x_limits(int x1, int x2)
+	{
+		XL = x1;
+		XR = x2;
 	}
 };
 
@@ -151,6 +169,7 @@ struct TraceWriter
 	virtual void fusion_s(const Point &from, const Point &to) = 0;
 	virtual void fill(const Point &from, const Point &to) = 0;
 	virtual void fission(const Point &from, const Point &to, int m) = 0;
+	virtual void do_command(Command cmd, int bot_id) = 0;
 	virtual ~TraceWriter() {}
 };
 
@@ -164,6 +183,7 @@ struct MemoryTraceWriter : public TraceWriter
 	void fusion_s(const Point &from, const Point &to);
 	void fill(const Point &from, const Point &to);
 	void fission(const Point &from, const Point &to, int m);
+	void do_command(Command cmd, int bot_id);
 
 	std::vector<Command> commands;
 };
@@ -182,6 +202,7 @@ struct FileTraceWriter : public TraceWriter
 	void fill(const Point &from, const Point &to);
 	void fission(const Point &from, const Point &to, int m);
 
+	void do_command(Command cmd, int bot_id);
 	i64 get_energy() const { return energy; }
 	int get_filled_count() const { return n_filled; }
 private:
@@ -201,6 +222,27 @@ private:
 Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
 
 typedef std::function<int(const Matrix *target, TraceWriter *writer)> TSolverFun;
+
+inline int high_bit(int seeds)
+{
+	for (int i = kMaxBots - 1; i >= 0; i--) if (seeds & (1 << i)) return i;
+	Assert(false);
+	return -1;
+}
+
+inline int low_bit(int seeds)
+{
+	for (int i = 0; i < kMaxBots; i++) if (seeds & (1 << i)) return i;
+	Assert(false);
+	return -1;
+}
+
+inline int make_seeds(int a, int b)
+{
+	return ((1 << b) - 1) ^ ((1 << a) - 1);
+}
+
+void collect_commands(TraceWriter *w, const std::vector<MemoryTraceWriter> &ww);
 
 void RegisterSolver(const std::string id, TSolverFun f);
 TSolverFun GetSolver(const std::string id);
