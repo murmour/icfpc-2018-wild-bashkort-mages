@@ -1,4 +1,8 @@
+#pragma once
+
 #include "common.h"
+#include "zlib.h"
+
 
 inline int sign(int x)
 {
@@ -208,7 +212,7 @@ struct FileTraceWriter : public TraceWriter
 private:
 	void next();
 
-	FILE *f;
+	gzFile f;
 	bool high_harmonics = false;
 	int n_bots = 1;
 	int n_bots_next = 1; // number of bots in the next move

@@ -29,7 +29,7 @@ if __name__ == '__main__':
         worker = {}
         # trace_base = 'local_traces/%s%s_%s' % (p['prefix'], p['id'], solver)
         trace_base = '../data/traces/%s%s_%s' % (p['prefix'], p['id'], solverAlias)
-        worker['trace_file'] = trace_base + '.nbt'
+        worker['trace_file'] = trace_base + '.nbt.gz'
         worker['meta_file'] = trace_base + '.meta'
         if os.path.isfile(worker['meta_file']):
             print('Trace %s already exists.' % trace_base)

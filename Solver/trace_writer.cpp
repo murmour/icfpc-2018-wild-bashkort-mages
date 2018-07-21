@@ -1,3 +1,4 @@
+
 #include "trace_writer.h"
 
 #ifdef __linux__
@@ -19,13 +20,13 @@ const Point kDeltas6[6] = {
 
 FileTraceWriter::FileTraceWriter(const char * fname, int R) : R(R)
 {
-	f = fopen(fname, "wb");
+	f = gzopen(fname, "wb");
 	energy = 3 * R * R * R + 20;
 }
 
 FileTraceWriter::~FileTraceWriter()
 {
-	fclose(f);
+	gzclose(f);
 }
 
 void FileTraceWriter::next()
@@ -44,7 +45,7 @@ void FileTraceWriter::next()
 void FileTraceWriter::halt()
 {
 	u8 data = 255;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	Assert(!high_harmonics);
 	Assert(n_bots == 1);
 	n_bots_next--;
@@ -54,14 +55,14 @@ void FileTraceWriter::halt()
 void FileTraceWriter::wait()
 {
 	u8 data = 254;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	next();
 }
 
 void FileTraceWriter::flip()
 {
 	u8 data = 253;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	high_harmonics = !high_harmonics;
 	next();
 }
@@ -73,7 +74,7 @@ void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_or
 		Assert(from != to);
 		Assert(abs(from - to) <= 15);
 		u8 data[2] = { u8((q << 4) + 4), u8(to - from + 15) };
-		fwrite(&data, 1, 2, f);
+		gzwrite(f, &data, 2);
 		energy += 2 * abs(from - to);
 	};
 	auto write_short = [&](int from1, int to1, int q1, int from2, int to2, int q2)
@@ -87,7 +88,7 @@ void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_or
 			swap(q1, q2);
 		}
 		u8 data[2] = { u8((q2 << 6) + (q1 << 4) + 12), u8(((to2 - from2 + 5) << 4) + (to1 - from1 + 5)) };
-		fwrite(&data, 1, 2, f);
+		gzwrite(f, &data, 2);
 		energy += 2 * (abs(from1 - to1) + 2 + abs(from2 - to2));
 	};
 	if (from.x == to.x && from.y == to.y)
@@ -117,7 +118,7 @@ inline int get_nd(const Point &from, const Point &to)
 void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 7;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	n_bots_next--;
 	Assert(n_bots_next > 0);
 	energy -= 24;
@@ -127,14 +128,14 @@ void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 void FileTraceWriter::fusion_s(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 6;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	next();
 }
 
 void FileTraceWriter::fill(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 3;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	energy += 12;
 	n_filled++;
 	next();
@@ -143,10 +144,10 @@ void FileTraceWriter::fill(const Point & from, const Point & to)
 void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 {
 	u8 data = (get_nd(from, to) << 3) + 5;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	Assert(m >= 0 && m <= 20);
 	data = m;
-	fwrite(&data, 1, 1, f);
+	gzwrite(f, &data, 1);
 	n_bots_next++;
 	energy += 24;
 	next();
@@ -191,7 +192,7 @@ void FileTraceWriter::do_command(Command cmd, int bot_id)
 
 bool Matrix::load_from_file(const char * filename)
 {
-	FILE * f = fopen(filename, "rb");
+	FILE *f = fopen(filename, "rb");
 	if (!f) return false;
 
 	unsigned char xr;
