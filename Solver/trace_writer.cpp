@@ -36,7 +36,8 @@ void TraceWriter::next()
 	{
 		n_bots = n_bots_next;
 		cur_bot = 0;
-		energy += (high_harmonics ? 30 : 3) * R * R * R + 20 * n_bots;
+		if (n_bots > 0)
+			energy += (high_harmonics ? 30 : 3) * R * R * R + 20 * n_bots;
 	}
 }
 
