@@ -47,15 +47,11 @@ if __name__ == '__main__':
             print('%s%s: no solution' % (p['prefix'], p['id']))
             continue
 
+        pts.sort(key = lambda pt: pt['energy'])
         best = pts[0]
-        best_energy = pts[0]['energy']
-        for pt in pts:
-            if pt['energy'] < best_energy:
-                best = pt
-                best_enery = pt['energy']
         print('%s%s: %d (%s)' % (best['prefix'], best['id'], best['energy'], best['solver']))
 
-        total_energy += best_energy
+        total_energy += best['energy']
 
     print()
     print('total energy: %d' % total_energy)
