@@ -21,6 +21,7 @@ if __name__ == '__main__':
     low_index = int(sys.argv[3])
     high_index = int(sys.argv[4])
     cpus = int(sys.argv[5])
+    rest_args = sys.argv[6:]
 
     def start_solving(p):
         global temp_counter
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         worker['process'] = subprocess.Popen([ executable,
                                              '-in', p['fname'],
                                              '-out', worker['temp_file'],
-                                             '-solver', solver ],
+                                             '-solver', solver ] + rest_args,
                                            stdin=subprocess.PIPE,
                                            stdout=subprocess.PIPE)
         return worker
