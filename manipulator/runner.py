@@ -13,21 +13,22 @@ temp_counter = 0
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print('Usage: runner.py executable solver lowIndex highIndex cpus')
+        print('Usage: runner.py executable solver solverAlias lowIndex highIndex cpus rest_args...')
         sys.exit(1)
 
     executable = sys.argv[1]
     solver = sys.argv[2]
-    low_index = int(sys.argv[3])
-    high_index = int(sys.argv[4])
-    cpus = int(sys.argv[5])
-    rest_args = sys.argv[6:]
+    solverAlias = sys.argv[3]
+    low_index = int(sys.argv[4])
+    high_index = int(sys.argv[5])
+    cpus = int(sys.argv[6])
+    rest_args = sys.argv[7:]
 
     def start_solving(p):
         global temp_counter
         worker = {}
         # trace_base = 'local_traces/%s%s_%s' % (p['prefix'], p['id'], solver)
-        trace_base = '../data/traces/%s%s_%s' % (p['prefix'], p['id'], solver)
+        trace_base = '../data/traces/%s%s_%s' % (p['prefix'], p['id'], solverAlias)
         worker['trace_file'] = trace_base + '.nbt'
         worker['meta_file'] = trace_base + '.meta'
         if os.path.isfile(worker['meta_file']):
