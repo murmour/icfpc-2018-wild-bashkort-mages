@@ -53,7 +53,7 @@ struct StupidSolver
 			for (int y = 0; y < R; y++)
 				for (int z = 0; z < R; z++)
 					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
-						assert(false);
+						Assert(false);
 	}
 
 	int operator () (const Matrix *m, TraceWriter *w)

@@ -20,6 +20,6 @@ log_*
 *.html
 *.vs
 *.nbt
-manipulator/tmp
+manipulator/temp
 Solver/solver
 nanovisu/nanovisu
