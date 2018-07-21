@@ -1,5 +1,7 @@
 #include "trace_writer.h"
 
+using namespace std;
+
 struct StupidSolver
 {
 	void reach(Point p, bool exact = false)
@@ -83,6 +85,41 @@ struct StupidSolver
 		}
 	}
 
+	void bfs(Point from, Point to, bool exact)
+	{
+		queue<Point> q;
+		vector<Point> used;
+		auto push = [&](Point t, char dir)
+		{
+			if (temp[t]) return;
+			temp[t] = dir;
+			q.push(t);
+			used.push_back(t);
+		};
+
+		auto check = [&](Point t)
+		{
+			return exact ? t == to : t.is_near(to);
+		};
+
+		push(from, 10);
+		while (!q.empty)
+		{
+			auto t = q.front(); q.pop();
+			if (check(t))
+			{
+				// restore path
+				return;
+			}
+			for (int i = 0; i < 6; i++)
+			{
+				auto p = t + kDeltas6[i];
+				if (!cur.is_valid(p)) continue;
+
+			}
+		}
+	}
+
 	void dfs(Point p)
 	{
 		reach(p);
@@ -135,6 +172,7 @@ struct StupidSolver
 	const Matrix *m;
 	TraceWriter *w;
 	Matrix cur;
+	Matrix temp;
 	int R;
 	Bot b;
 };

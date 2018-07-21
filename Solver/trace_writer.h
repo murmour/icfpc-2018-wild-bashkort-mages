@@ -72,7 +72,7 @@ const int kMaxR = 250;
 struct Matrix
 {
 	int R;
-	bool m[kMaxR][kMaxR][kMaxR];
+	char m[kMaxR][kMaxR][kMaxR];
 
 	bool load_from_file(const char * filename);
 	void clear(int r);
