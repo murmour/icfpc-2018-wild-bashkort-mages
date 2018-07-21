@@ -9,14 +9,14 @@ int main(int argc, char** argv)
 	auto out_file = System::GetArgValue("out");
 	auto in_file = System::GetArgValue("in");
 
-	Matrix model;
-	if (!model.load_from_file(in_file.c_str()))
+	Matrix *model = new Matrix();
+	if (!model->load_from_file(in_file.c_str()))
 	{
 		fprintf(stderr, "Failed to load model '%s'", in_file.c_str());
 		return 1;
 	}
 
-	TraceWriter tw(out_file.c_str(), model.R);
+	TraceWriter tw(out_file.c_str(), model->R);
 
 	string solver = "stupid"; // default solver
 	if (System::HasArg("solver"))
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
-	solver_f(model, tw);
+	solver_f(*model, tw);
 
 	printf("%lld", tw.get_energy()); // print total energy spent
 	return 0;

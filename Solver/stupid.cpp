@@ -39,7 +39,7 @@ struct StupidSolver
 			{
 				w->move(b.pos, a);
 				b.pos = a;
-				break;
+				continue;
 			}
 
 			// try y
@@ -58,7 +58,7 @@ struct StupidSolver
 			{
 				w->move(b.pos, a);
 				b.pos = a;
-				break;
+				continue;
 			}
 
 			// try z
@@ -77,7 +77,7 @@ struct StupidSolver
 			{
 				w->move(b.pos, a);
 				b.pos = a;
-				break;
+				continue;
 			}
 			Assert(false);
 		}
@@ -137,7 +137,14 @@ struct StupidSolver
 	Matrix cur;
 	int R;
 	Bot b;
+};
+
+int stupid_solver(const Matrix &target, TraceWriter &writer)
+{
+	auto solver = new StupidSolver();
+	int res = (*solver)(target, writer);
+	delete solver;
+	return res;
 }
 
-stupid_solver = StupidSolver();
 REG_SOLVER("stupid", stupid_solver);

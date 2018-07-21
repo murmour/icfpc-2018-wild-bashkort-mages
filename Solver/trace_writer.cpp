@@ -182,17 +182,21 @@ void Matrix::clear(int r)
 			memset(m[i][j], 0, r);
 }
 
-map<string, TSolverFun> solvers;
+map<string, TSolverFun> *solvers = nullptr;
 
 void RegisterSolver(const std::string id, TSolverFun f)
 {
-	Assert(solvers.find(id) == solvers.end());
-	solvers[id] = f;
+	if (!solvers)
+		solvers = new map<string, TSolverFun>;
+	Assert(solvers->find(id) == solvers->end());
+	(*solvers)[id] = f;
 }
 
 TSolverFun GetSolver(const std::string id)
 {
-	if (solvers.find(id) == solvers.end())
+	if (!solvers)
 		return nullptr;
-	return solvers[id];
+	if (solvers->find(id) == solvers->end())
+		return nullptr;
+	return (*solvers)[id];
 }
