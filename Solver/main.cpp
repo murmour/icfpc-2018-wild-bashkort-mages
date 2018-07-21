@@ -33,5 +33,6 @@ int main(int argc, char** argv)
 	Assert(tw->get_filled_count() == model->get_filled_count());
 
 	printf("%lld", tw->get_energy()); // print total energy spent
+	delete tw;
 	return 0;
 }

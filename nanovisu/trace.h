@@ -6,6 +6,11 @@
 
 #include <vector>
 #include <iostream>
+#include "zlib.h"
+
+#ifdef __linux__
+#   define sprintf_s sprintf
+#endif
 
 using namespace std;
 
@@ -148,7 +153,7 @@ struct TraceReader
 	bool open_file( const char *fname );
 	TraceCommand read_next();
 private:
-	FILE *f;
+	gzFile f;
 
 	Point sld_to_point( int a, int i );
 	Point lld_to_point( int a, int i );
