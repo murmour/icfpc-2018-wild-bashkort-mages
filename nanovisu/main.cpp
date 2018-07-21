@@ -12,7 +12,7 @@
 #ifdef __linux__
 #   include <dirent.h>
 #   include <unistd.h>
-#   define Sleep sleep
+#   define Sleep(ms) usleep(ms * 1000)
 #   define fread_s(b, blen, sz, count, stream) fread(b, sz, count, stream)
 #else
 #   include "dirent.h"
