@@ -43,18 +43,20 @@ def parse_trace_meta_fname(fname):
     if m is None:
         return None
     else:
-        return { 'fname': '../data/traces/' + fname,
+        fname = m.group('prefix') + m.group('id') + '_' + m.group('solver')
+        return { 'fname': '../data/traces/' + fname + '.nbt',
+                 'meta_fname': '../data/traces/' + fname + '.meta',
                  'prefix': m.group('prefix'),
                  'id': int(m.group('id')),
                  'solver': m.group('solver') }
 
 
-def get_all_traces():
+def get_all_good_traces():
     ps = [ parse_trace_meta_fname(f) for f in os.listdir("../data/traces") ]
     ps = list(filter(None, ps))
     ps.sort(key = lambda f: f['id'])
     for p in ps:
-        with io.open(p['fname'], 'r') as f:
+        with io.open(p['meta_fname'], 'r') as f:
             meta = json.loads(f.read())
             p['energy'] = meta['energy']
     return ps
