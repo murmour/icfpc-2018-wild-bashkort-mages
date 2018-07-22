@@ -51,7 +51,7 @@ def parse_trace_meta_fname(fname):
              'prefix': m.group('prefix'),
              'id': int(m.group('id')),
              'solver': m.group('solver'),
-             'bots': m.group('bots')}
+             'bots': int(m.group('bots'))}
 
 
 def get_all_good_traces():

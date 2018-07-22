@@ -12,7 +12,7 @@ temp_counter = 0
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 9:
         print('Usage: runner.py executable solver solver_alias low_index '
               'high_index job_count low_bots high_bots kinds')
         sys.exit(1)
