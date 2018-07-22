@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Failed to load model '%s'", in_file.c_str());
 		return 1;
 	}
+	model->init_sums();
 
 	if (!in_file2.empty())
 	{
@@ -45,6 +46,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 		Assert(model->R == model2->R);
+		model2->init_sums();
 	}
 
 	string solver = "bfs"; // default solver

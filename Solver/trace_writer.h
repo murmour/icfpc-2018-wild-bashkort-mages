@@ -103,6 +103,26 @@ struct Region
 		b.z = std::max(pa.z, pb.z);
 	}
 
+	Point opposite(const Point &p)
+	{
+		auto f = [](int a, int b, int c)
+		{
+			if (c == a) return b;
+			if (c == b) return a;
+			Assert(false);
+			return -1;
+		};
+
+		return { f(a.x, b.x, p.x), f(a.y, b.y, p.y), f(a.z, b.z, p.z) };
+	}
+
+	bool contains(const Point &p) const
+	{
+		return a.x <= p.x && p.x <= b.x &&
+			a.y <= p.y && p.y <= b.y &&
+			a.z <= p.z && p.z <= b.z;
+	}
+
 	bool operator < (const Region &other) const
 	{
 		if (a != other.a) return a < other.a;
@@ -134,14 +154,29 @@ constexpr const int kMaxBots = 40;
 
 const int kMaxR = 250;
 
+struct IntM
+{
+	int m[kMaxR][kMaxR][kMaxR];
+};
+
+inline Region get_region(Point p, int s)
+{
+	Point base = { p.x * s, p.y * s, p.z * s };
+	Point opp = { p.x * s + s - 1, p.y * s + s - 1, p.z * s + s - 1 };
+	return Region(base, opp);
+}
+
 struct Matrix
 {
 	int R;
 	char m[kMaxR][kMaxR][kMaxR];
+	IntM *sums = nullptr;
 	int XL = -1, XR = -1, ZL = -1, ZR = -1;
 
 	bool load_from_file(const char * filename);
 	void clear(int r);
+
+	void init_sums();
 
 	char& operator [] (const Point &p)
 	{
@@ -172,6 +207,54 @@ struct Matrix
 	bool is_valid(const Point &p) const
 	{
 		return p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < R && p.y < R && p.z < R;
+	}
+
+	int get_sum(const Region &r) const
+	{
+		Assert(sums);
+		int X = r.b.x, Y = r.b.y, Z = r.b.z;
+		int x = r.a.x - 1, y = r.a.y - 1, z = r.a.z - 1;
+
+		int res = sums->m[X][Y][Z];
+		if (x > 0)
+		{
+			res -= sums->m[x][Y][Z];
+			if (y > 0)
+			{
+				res += sums->m[x][y][Z];
+				if (z > 0)
+					res -= sums->m[x][y][z];
+			}
+			if (z > 0)
+			{
+				res += sums->m[x][Y][z];
+			}
+		}
+		if (y > 0)
+		{
+			res -= sums->m[X][y][Z];
+			if (z > 0)
+			{
+				res += sums->m[X][y][z];
+			}
+		}
+		if (z > 0)
+		{
+			res -= sums->m[X][Y][z];
+		}
+		return res;
+	}
+
+	bool check_b(const Point &p, int s) const
+	{
+		Region r = get_region(p, s);
+		return get_sum(r) == s * s * s;
+	}
+
+	bool is_valid(const Point &p, int s) const
+	{
+		int N = R / s;
+		return p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < N && p.y < N && p.z < N;
 	}
 
 	int get_filled_count() const

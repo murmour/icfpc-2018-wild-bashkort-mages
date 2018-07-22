@@ -229,6 +229,7 @@ void FileTraceWriter::g_fill(const Point &from, const Point &to, const Point & f
 	{
 		gr_ops[r]++;
 	}
+	next();
 }
 
 void FileTraceWriter::g_void(const Point &from, const Point &to, const Point & fd)
@@ -261,6 +262,7 @@ void FileTraceWriter::g_void(const Point &from, const Point &to, const Point & f
 	{
 		gr_ops[r]++;
 	}
+	next();
 }
 
 Point FileTraceWriter::do_command(const Point &p, Command cmd, int bot_id)
@@ -346,6 +348,45 @@ void Matrix::clear(int r)
 	for (int i = 0; i < r; i++)
 		for (int j = 0; j < r; j++)
 			memset(m[i][j], 0, r);
+}
+
+void Matrix::init_sums()
+{
+	Assert(!sums);
+	sums = new IntM();
+	for (int x = 0; x < R; x++)
+		for (int y = 0; y < R; y++)
+			for (int z = 0; z < R; z++)
+			{
+				int r = bool(m[x][y][z]);
+				if (x)
+				{
+					r += sums->m[x - 1][y][z];
+					if (y)
+					{
+						r -= sums->m[x - 1][y - 1][z];
+						if (z)
+							r += sums->m[x - 1][y - 1][z - 1];
+					}
+					if (z)
+					{
+						r -= sums->m[x - 1][y][z - 1];
+					}
+				}
+				if (y)
+				{
+					r += sums->m[x][y - 1][z];
+					if (z)
+					{
+						r -= sums->m[x][y - 1][z - 1];
+					}
+				}
+				if (z)
+				{
+					r += sums->m[x][y][z - 1];
+				}
+				sums->m[x][y][z] = r;
+			}
 }
 
 map<string, TSolverFun> *solvers = nullptr;

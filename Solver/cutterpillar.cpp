@@ -290,6 +290,7 @@ struct CutterpillarSolver
 					Point t = { x0, y, z0 };
 					reach_cell(bots[seg], t, &cur, &bots[seg]->mw);
 					bots[seg]->mw.fill(bots[seg]->pos, t);
+					cur[t] = true;
 				}
 			}
 			BFS(bots[seg], { x0, y0, z0 }, &bots[seg]->mw);
@@ -301,6 +302,7 @@ struct CutterpillarSolver
 					Point t = { x0, y, z0 };
 					reach_cell(bots[seg], t, &cur, &bots[seg]->mw);
 					bots[seg]->mw.void_(bots[seg]->pos, t);
+					cur[t] = false;
 				}
 			}
 

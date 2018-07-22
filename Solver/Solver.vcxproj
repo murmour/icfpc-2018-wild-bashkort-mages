@@ -121,6 +121,7 @@
     <ClCompile Include="cutterpillar_z.cpp" />
     <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="overmind.cpp" />
     <ClCompile Include="stupid.cpp" />
     <ClCompile Include="stupid2.cpp" />
     <ClCompile Include="system.cpp" />
