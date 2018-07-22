@@ -26,4 +26,4 @@ if __name__ == '__main__':
             with io.open(t['meta_fname'], 'w') as f:
                 f.write(json.dumps(meta))
             os.remove(t['fname'])
-            print('%s was marked as rubbish and removed' % t['meta_fname'])
+            print('%s was marked as rubbish and removed' % t['fname'])
