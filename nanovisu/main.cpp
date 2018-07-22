@@ -300,9 +300,9 @@ bool trace_mode = false;
 int trace_speed = 1;
 int picked_bot = -1;
 
-constexpr const int kMaxBots = 40;
+//constexpr const int kMaxBots = 40;
 
-struct Bot
+struct ZBot
 {
 	Point pos;
 	long long seeds;
@@ -321,7 +321,7 @@ struct SYSTEM_STATE
 	VOXMAT ss_vm;
 
 	long long energy;
-	Bot bots[kMaxBots];
+	ZBot bots[kMaxBots];
 
 	void reset()
 	{
@@ -539,10 +539,10 @@ void load_trace_file( string file )
 	}
 	trace_cmd.clear();
 
-	vector< Bot > bots_now;
+	vector< ZBot > bots_now;
 	bots_now.push_back( { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, 0, true } );
-	vector< Bot > bots_add;
-	vector< Bot > bots_rem;
+	vector< ZBot > bots_add;
+	vector< ZBot > bots_rem;
 	int cur_bot = 0;
 	vector< TraceCommand > vec;
 	while(1)
@@ -597,7 +597,7 @@ void load_trace_file( string file )
 				bots_now.push_back( bots_add[a] );
 			for (int a=0; a<(int)bots_rem.size(); a++)
 			{
-				vector< Bot > tmp;
+				vector< ZBot > tmp;
 				for (int b=0; b<(int)bots_now.size(); b++)
 					if (bots_now[b].id != bots_rem[a].id)
 						tmp.push_back( bots_now[b] );
@@ -606,7 +606,7 @@ void load_trace_file( string file )
 			bots_add.clear();
 			bots_rem.clear();
 			sort( bots_now.begin(), bots_now.end(),
-				[](const Bot & a, const Bot & b) -> bool { return a.id < b.id; } );
+				[](const ZBot & a, const ZBot & b) -> bool { return a.id < b.id; } );
 			trace_cmd.push_back( vec );
 			vec.clear();
 		}
