@@ -260,7 +260,7 @@ int main(int argc, char * argv[])
 {
 	freopen( "output.txt", "w", stdout );
 
-	load_trace_file( "FA1_cutterpillar11.nbt.gz" );
+	load_trace_file( "FA70_cutterpillar29.nbt.gz" );
 
 	vector< RipBot > bots_now;
 	bots_now.push_back( { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, 0, true } );
@@ -391,17 +391,17 @@ int main(int argc, char * argv[])
 	for (int i=0; i<(int)rev_cmd.size(); i++)
 	{
 		for (int j=0; j<(int)rev_cmd[i].size(); j++)
-			cout << rev_cmd[i][j].cmd_to_string( true, false, true, false ).c_str() << "; ";
+			cout << rev_cmd[i][j].cmd_to_string( true, false, true, false, true ).c_str() << "; ";
 		cout << "\n";
 	}
 
-	ss.load_from_file( "FA001_tgt.mdl" );
+	ss.load_from_file( "FA070_tgt.mdl" );
 	ss.reset();
 
 	Matrix * ma = new Matrix();
-	ma->load_from_file( "../data/problemsF/" "FA001_tgt.mdl" );
+	ma->load_from_file( "../data/problemsF/" "FA070_tgt.mdl" );
 
-	FileTraceWriter * wtf = new FileTraceWriter( "FA1_reversu11.nbt.gz", ma->R, ma );
+	FileTraceWriter * wtf = new FileTraceWriter( "FA70_reversed29.nbt.gz", ma->R, ma );
 	for (int i=0; i<(int)rev_cmd.size(); i++)
 	{
 		for (int j=0; j<(int)rev_cmd[i].size(); j++)
@@ -411,7 +411,12 @@ int main(int argc, char * argv[])
 			else if (cmd.tp == CT_WAIT) wtf->wait();
 			else if (cmd.tp == CT_FLIP) wtf->flip();
 			else if (cmd.tp == CT_S_MOVE) wtf->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
-			else if (cmd.tp == CT_L_MOVE) wtf->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1+cmd.p2 ); //{ ass( false ); }
+			else if (cmd.tp == CT_L_MOVE)
+			{
+				int c1 = (cmd.p1.x!=0 ? 0 : (cmd.p1.y!=0 ? 1 : 2));
+				int c2 = (cmd.p2.x!=0 ? 0 : (cmd.p2.y!=0 ? 1 : 2));
+				wtf->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1+cmd.p2, c1 > c2 );
+			}
 			else if (cmd.tp == CT_FUSION_P) wtf->fusion_p( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
 			else if (cmd.tp == CT_FUSION_S) wtf->fusion_s( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
 			else if (cmd.tp == CT_FISSION) wtf->fission( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1, cmd.m );
