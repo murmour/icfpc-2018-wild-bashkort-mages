@@ -23,7 +23,8 @@ struct Point
 	bool is_near(const Point &other) const
 	{
 		int a = Abs(x - other.x), b = Abs(y - other.y), c = Abs(z - other.z);
-		return a <= 1 && b <= 1 && c <= 1 && a + b + c <= 2;
+		int s = a + b + c;
+		return a <= 1 && b <= 1 && c <= 1 && s <= 2 && s > 0;
 	}
 
 	int mlen() const // manhattan length

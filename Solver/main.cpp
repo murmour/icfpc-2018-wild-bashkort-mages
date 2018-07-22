@@ -65,7 +65,11 @@ int main(int argc, char** argv)
 		solver_f(model, nullptr, tw);
 	else if (ptype == 'R')
 	{
-		if (System::HasArg("solver2"))
+		if (model->check_equal(*model2))
+		{
+			// no operations needed
+		}
+		else if (System::HasArg("solver2"))
 		{
 			auto solver2 = System::GetArgValue("solver2");
 			auto solver2_f = GetSolver(solver2);
