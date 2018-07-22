@@ -70,7 +70,7 @@ if __name__ == '__main__':
     pool = [None] * job_count
     left = len(queue)
     while left > 0:
-        time.sleep(0.1)
+        time.sleep(0.01)
         for i in range(len(pool)):
             if pool[i] is None:
                 if queue == []:
