@@ -73,7 +73,8 @@ int main(int argc, char** argv)
 
 	else if (ptype == 'D')
     {
-		const string rev_out_file = "rev_" + out_file;
+		return 66; // todo
+		const string rev_out_file = out_file + ".rev";
 		FileTraceWriter *tw = new FileTraceWriter(rev_out_file.c_str(), model->R, nullptr);
 		solver_f(nullptr, model, tw);
 		tw->halt();
