@@ -26,6 +26,16 @@ struct Point
 		return a <= 1 && b <= 1 && c <= 1 && a + b + c <= 2;
 	}
 
+	int mlen() const // manhattan length
+	{
+		return Abs(x) + Abs(y) + Abs(z);
+	}
+
+	int nz_count() const
+	{
+		return (x != 0) + (y != 0) + (z != 0);
+	}
+
 	bool is_fd() const
 	{
 		return *this != Point::Origin && Abs(x) <= 30 && Abs(y) <= 30 && Abs(z) <= 30;
@@ -237,6 +247,10 @@ struct TraceWriter
 	virtual void void_(const Point &from, const Point &to) = 0;
 	virtual void g_fill(const Point &from, const Point &to, const Point &fd) = 0;
 	virtual void g_void(const Point &from, const Point &to, const Point &fd) = 0;
+
+	virtual int get_n_moves() const = 0;
+	virtual bool backtrack(int old_moves_count) = 0;
+
 	virtual ~TraceWriter() {}
 };
 
@@ -258,6 +272,13 @@ struct MemoryTraceWriter : public TraceWriter
 	void void_(const Point &from, const Point &to);
 	void g_fill(const Point &from, const Point &to, const Point &fd);
 	void g_void(const Point &from, const Point &to, const Point &fd);
+
+	int get_n_moves() const
+	{
+		return (int)commands.size();
+	}
+
+	bool backtrack(int old_moves_count);
 
 	std::vector<Command> commands;
 	Bot *bot;
@@ -289,6 +310,16 @@ struct FileTraceWriter : public TraceWriter
 	i64 get_energy() const { return energy; }
 	int get_filled_count() const { return n_filled; }
 	const Matrix& get_matrix() const { return mat; }
+
+	int get_n_moves() const
+	{
+		return n_moves;
+	}
+
+	bool backtrack(int old_moves_count)
+	{
+		return false;
+	}
 private:
 	void next();
 
@@ -302,6 +333,9 @@ private:
 	int R; // resolution
 	Matrix mat;
 	std::map<Region, int> gr_ops; // how many ops were for this region
+	int n_long_moves = 0;
+	int n_short_moves = 0;
+	int n_moves = 0;
 };
 
 struct Bot
@@ -366,6 +400,18 @@ inline bool check_for_all_subdeltas(Point p, F f)
 	if (p.x && p.z & !f({ p.x, 0, p.z })) return false;
 	if (p.y && p.z & !f({ 0, p.y, p.z })) return false;
 	return true;
+}
+
+inline int first_changed_coord(const Point &p)
+{
+	if (p.x) return 0;
+	if (p.y) return 1;
+	return 2;
+}
+
+inline bool need_reverse(int dir1, int dir2)
+{
+	return first_changed_coord(kDeltas6[dir1]) > first_changed_coord(kDeltas6[dir2]);
 }
 
 // clears commands after collecting
