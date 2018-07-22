@@ -632,7 +632,7 @@ void nano_display_code()
 			refresh_list_of_model_files();
 			need_refresh = false;
 		}
-		for (int a = 0; a < (int)model_files.size(); a ++)
+		for (int a = 0; a < (int)model_files.size(); a++)
 		{
 			bool is_selected = (cur_model == model_files[a]);
 			if (ImGui::Selectable(model_files[a].c_str(), is_selected))
@@ -649,6 +649,42 @@ void nano_display_code()
 		}
 		ImGui::EndCombo();
 	}
+	ImGui::SameLine();
+	if (ImGui::Button( "Prev" ))
+	{
+		for (size_t a = 0; a < model_files.size(); a++)
+		{
+			const bool is_selected = (cur_model == model_files[a]);
+			if (is_selected)
+			{
+                a = (a == 0 ? model_files.size()-1 : a-1);
+				trace_mode = false;
+				ss.reset();
+				cur_cmd = 0;
+				cur_model = model_files[a];
+				load_model_file( cur_model );
+				need_refresh = true;
+			}
+		}
+    }
+	ImGui::SameLine();
+	if (ImGui::Button( "Next" ))
+	{
+		for (size_t a = 0; a < model_files.size(); a++)
+		{
+			const bool is_selected = (cur_model == model_files[a]);
+			if (is_selected)
+			{
+                a = (a == model_files.size()-1 ? 0 : a+1);
+				trace_mode = false;
+				ss.reset();
+				cur_cmd = 0;
+				cur_model = model_files[a];
+				load_model_file( cur_model );
+				need_refresh = true;
+			}
+		}
+    }
 
 	ImGui::Text( "Resolution: %d  Filled: %d\n", vm.R, vm.filled );
 
