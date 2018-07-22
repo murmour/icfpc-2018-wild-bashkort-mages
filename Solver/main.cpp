@@ -96,6 +96,15 @@ int main(int argc, char** argv)
             return 3;
         }
 
+		string tgt_solver = solver;
+		if (System::HasArg("solver2"))
+			tgt_solver = System::GetArgValue("solver2");
+		auto tgt_solver_f = GetSolver(solver);
+		if (!tgt_solver_f) {
+			fprintf(stderr, "Unsupported solver: %s", tgt_solver.c_str());
+			return 3;
+		}
+
         auto idx = in_file.find("src");
 		if (idx == string::npos) return 66;
 		string tgt_file = in_file;
@@ -108,15 +117,6 @@ int main(int argc, char** argv)
 		}
 		Assert(model->R == tgt_model->R);
 		tgt_model->init_sums();
-
-		string tgt_solver = solver;
-		if (System::HasArg("solver2"))
-			tgt_solver = System::GetArgValue("solver2");
-		auto tgt_solver_f = GetSolver(solver);
-		if (!tgt_solver_f) {
-			fprintf(stderr, "Unsupported solver: %s", tgt_solver.c_str());
-			return 3;
-		}
 
 		// Equivalent models -> fast path
 		if (model->check_equal(*tgt_model)) {
