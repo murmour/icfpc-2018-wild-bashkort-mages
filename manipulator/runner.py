@@ -19,11 +19,11 @@ if __name__ == '__main__':
 
     executable = sys.argv[1]
     solver = sys.argv[2]
-    low_index = int(sys.argv[4])
-    high_index = int(sys.argv[5])
-    job_count = int(sys.argv[6])
-    low_bots = int(sys.argv[7])
-    high_bots = int(sys.argv[8])
+    low_index = int(sys.argv[3])
+    high_index = int(sys.argv[4])
+    job_count = int(sys.argv[5])
+    low_bots = int(sys.argv[6])
+    high_bots = int(sys.argv[7])
 
     def start_solving(p):
         global temp_counter
