@@ -127,7 +127,7 @@ struct Matrix
 {
 	int R;
 	char m[kMaxR][kMaxR][kMaxR];
-	int XL = -1, XR = -1;
+	int XL = -1, XR = -1, ZL = -1, ZR = -1;
 
 	bool load_from_file(const char * filename);
 	void clear(int r);
@@ -146,6 +146,7 @@ struct Matrix
 		Assert(is_valid(p));
 #endif
 		if (XL != -1 && (p.x < XL || p.x > XR)) return true;
+		if (ZL != -1 && (p.z < ZL || p.z > ZR)) return true;
 		return m[p.x][p.y][p.z];
 	}
 
@@ -177,6 +178,12 @@ struct Matrix
 	{
 		XL = x1;
 		XR = x2;
+	}
+
+	void set_z_limits(int z1, int z2)
+	{
+		ZL = z1;
+		ZR = z2;
 	}
 
 	bool check_equal(const Matrix &other) const
