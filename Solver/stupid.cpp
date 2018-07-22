@@ -7,7 +7,7 @@ struct StupidSolver
 	
 	void dfs(Point p)
 	{
-		b->pos = reach_cell(b->pos, p, &cur, w);
+		reach_cell(b, p, &cur, w);
 		w->fill(b->pos, p);
 		cur[p] = true;
 		for (auto d : kDeltas6)
@@ -40,7 +40,7 @@ struct StupidSolver
 		cur.clear(R);
 		dfs({ x0, 0, z0 });
 
-		b->pos = reach_cell(b->pos, { 0, 0, 0 }, &cur, w, true);
+		reach_cell(b, { 0, 0, 0 }, &cur, w, true);
 
 		return 0;
 	}
