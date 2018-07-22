@@ -49,8 +49,8 @@
 #define ensure_true(x) { bool __res = bool(x); assert(__res); }
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&);   \
-  void operator=(const TypeName&)
+  TypeName(const TypeName&) = delete;   \
+  void operator=(const TypeName&) = delete
 
 #ifndef _MSC_VER
 #define sprintf_s sprintf

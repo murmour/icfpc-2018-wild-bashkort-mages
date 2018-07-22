@@ -13,52 +13,61 @@ temp_counter = 0
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print('Usage: runner.py executable solver solverAlias lowIndex highIndex cpus rest_args...')
+        print('Usage: runner.py executable solver low_index high_index '
+              'job_count low_bots high_bots')
         sys.exit(1)
 
     executable = sys.argv[1]
     solver = sys.argv[2]
-    solverAlias = sys.argv[3]
     low_index = int(sys.argv[4])
     high_index = int(sys.argv[5])
-    cpus = int(sys.argv[6])
-    rest_args = sys.argv[7:]
+    job_count = int(sys.argv[6])
+    low_bots = int(sys.argv[7])
+    high_bots = int(sys.argv[8])
 
     def start_solving(p):
         global temp_counter
-        worker = {}
-        trace_base = common.traces_dir + ('%s%s_%s' % (p['prefix'], p['id'], solverAlias))
-        worker['trace_file'] = trace_base + '.nbt.gz'
-        worker['meta_file'] = trace_base + '.meta'
-        if os.path.isfile(worker['meta_file']):
+        job = {}
+        trace_base = '%s%s_%s%d' % (p['prefix'], p['id'], solver, p['bots'])
+        job['trace_file'] = common.traces_dir + trace_base + '.nbt.gz'
+        job['meta_file'] = common.traces_dir + trace_base + '.meta'
+        if os.path.isfile(job['meta_file']):
             print('Trace %s already exists.' % trace_base)
             return None
-        print('Producing %s...' % worker['trace_file'])
-        worker['temp_file'] = 'temp/tmp%d' % temp_counter
+        print('Producing %s...' % job['trace_file'])
+        job['temp_file'] = 'temp/tmp%d' % temp_counter
         temp_counter += 1
-        worker['process'] = subprocess.Popen([ executable,
-                                             '-in', p['fname'],
-                                             '-out', worker['temp_file'],
-                                             '-solver', solver ] + rest_args,
-                                           stdin=subprocess.PIPE,
-                                           stdout=subprocess.PIPE)
-        return worker
+        job['process'] = subprocess.Popen([executable,
+                                              '-in', p['fname'],
+                                              '-out', job['temp_file'],
+                                              '-solver', solver,
+                                              '-bots', str(p['bots'])],
+                                             stdin=subprocess.PIPE,
+                                             stdout=subprocess.PIPE)
+        return job
 
-    def finish_solving(worker, retcode):
+    def finish_solving(job, retcode):
         if retcode != 0:
-            print('%s: ERROR (return code %d)' % (worker['trace_file'], retcode))
+            print('%s: ERROR (return code %d)' %
+                  (job['trace_file'], retcode))
         else:
-            out = worker['process'].communicate()[0].decode()
+            out = job['process'].communicate()[0].decode()
             energy = int(out)
-            print('%s: SUCCESS (energy %d)' % (worker['trace_file'], energy))
-            os.rename(worker['temp_file'], worker['trace_file'])
-            with io.open(worker['meta_file'], 'w') as f:
-                f.write(json.dumps({ 'energy': energy }))
+            print('%s: SUCCESS (energy %d)' % (job['trace_file'], energy))
+            os.rename(job['temp_file'], job['trace_file'])
+            with io.open(job['meta_file'], 'w') as f:
+                f.write(json.dumps({'energy': energy}))
 
-    pool = [ None ] * cpus
-    queue = common.filter_problems(low_index, high_index)
+    ps = common.filter_problems(low_index, high_index)
+    queue = []
+    for bots in range(low_bots, high_bots+1):
+        for p in ps:
+            p2 = dict(p)
+            p2['bots'] = bots
+            queue.append(p2)
+
+    pool = [None] * job_count
     left = len(queue)
-
     while left > 0:
         time.sleep(0.1)
         for i in range(len(pool)):
@@ -73,9 +82,9 @@ if __name__ == '__main__':
                     continue
                 else:
                     break
-            worker = pool[i]
-            retcode = worker['process'].poll()
+            job = pool[i]
+            retcode = job['process'].poll()
             if retcode is not None:
                 left -= 1
                 pool[i] = None
-                finish_solving(worker, retcode)
+                finish_solving(job, retcode)

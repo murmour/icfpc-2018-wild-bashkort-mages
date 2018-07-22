@@ -410,7 +410,6 @@ void refresh_list_of_model_files()
 				model_files.push_back( string(ent->d_name) );
 		closedir(dir);
 	}
-
 	sort( model_files.begin(), model_files.end() );
 }
 
@@ -521,6 +520,7 @@ void load_model_file( string file )
 	trace_cmd.clear();
 	sort( trace_files.begin(), trace_files.end() );
 	cerr << "ok! traces=" << trace_files.size() << "\n";
+    std::sort(trace_files.begin(), trace_files.end());
 }
 
 void load_trace_file( string file )
@@ -710,15 +710,6 @@ void nano_display_code()
 		if (ImGui::Button( "Pause" ))
 			trace_speed = 0;
 		ImGui::SameLine();
-		if (ImGui::Button( "Speed 1" ))
-			trace_speed = 1;
-		ImGui::SameLine();
-		if (ImGui::Button( "Speed 5" ))
-			trace_speed = 5;
-		ImGui::SameLine();
-		if (ImGui::Button( "Speed 10" ))
-			trace_speed = 10;
-		ImGui::SameLine();
 		if (ImGui::Button( "Step" ))
 		{
 			trace_speed = 0;
@@ -736,6 +727,20 @@ void nano_display_code()
 			ss.reset();
 			cur_cmd = 0;
 		}
+		if (ImGui::Button( "Speed 1" ))
+			trace_speed = 1;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 5" ))
+			trace_speed = 5;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 10" ))
+			trace_speed = 10;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 50" ))
+			trace_speed = 50;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 100" ))
+			trace_speed = 100;
 		ImGui::Text( "Speed: %d\n", trace_speed );
 	}
 	else
