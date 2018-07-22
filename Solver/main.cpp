@@ -64,10 +64,28 @@ int main(int argc, char** argv)
 	else if (ptype == 'D')
 		solver_f(model, nullptr, tw);
 	else if (ptype == 'R')
-		solver_f(model, model2, tw);
+	{
+		if (System::HasArg("solver2"))
+		{
+			auto solver2 = System::GetArgValue("solver2");
+			auto solver2_f = GetSolver(solver2);
+			if (!solver2_f)
+			{
+				fprintf(stderr, "Unsupported solver: %s", solver2.c_str());
+				return 4;
+			}
+			solver_f(model, nullptr, tw);
+			solver2_f(nullptr, model2, tw);
+		}
+		else
+		{
+			solver_f(model, model2, tw);
+		}
+	}
 	else
 		return 44;
 
+	tw->halt();
 	if (ptype == 'D')
 	{
 		Assert(tw->get_filled_count() == 0);
