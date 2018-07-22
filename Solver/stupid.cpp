@@ -42,7 +42,6 @@ struct StupidSolver
 
 		b->pos = reach_cell(b->pos, { 0, 0, 0 }, &cur, w, true);
 
-		w->halt();
 		return 0;
 	}
 

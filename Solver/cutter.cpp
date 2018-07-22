@@ -236,7 +236,6 @@ struct CutterSolver
 		collect_commands(w, all_bots);
 		cur.set_x_limits(-1, -1);
 		fusion();
-		w->halt();
 		return 0;
 	}
 
