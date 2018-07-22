@@ -327,6 +327,8 @@ struct SYSTEM_STATE
 	long long energy;
 	ZBot bots[kMaxBots];
 
+	bool deconstruct = false;
+
 	void reset()
 	{
 		ss_vm.R = vm.R;
@@ -335,7 +337,7 @@ struct SYSTEM_STATE
 		for (int a=0; a<R; a++)
 			for (int b=0; b<R; b++)
 				for (int c=0; c<R; c++)
-					ss_vm.m[a][b][c] = false;
+					ss_vm.m[a][b][c] = (deconstruct ? vm.m[a][b][c] : false);
 		for (int a=0; a<kMaxBots; a++)
 			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a, true };
 			else bots[a] = { { -10, -10, -10 }, 0, a, false };
@@ -850,6 +852,8 @@ void nano_display_code()
 			cur_cmd = 0;
 			trace_speed = 0;
 		}
+		ImGui::SameLine();
+		ImGui::Checkbox( "Deconstruction", &ss.deconstruct );
 	}
 
 	int n_bots = 0;
