@@ -48,6 +48,12 @@
     <ClCompile Include="overmind.cpp">
       <Filter>Solvers</Filter>
     </ClCompile>
+    <ClCompile Include="reversu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\nanovisu\trace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace_writer.h">
