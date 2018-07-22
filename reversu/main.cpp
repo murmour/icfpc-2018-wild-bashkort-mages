@@ -127,6 +127,135 @@ void load_trace_file( string file )
 	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
 }
 
+struct VOXMAT
+{
+	int R;
+	int filled;
+	bool m[250][250][250];
+};
+
+struct SYSTEM_STATE
+{
+	VOXMAT vm;
+	VOXMAT ss_vm;
+
+	long long energy;
+	RipBot bots[kMaxBots];
+
+	void load_from_file( string file )
+	{
+		cerr << "loading model file " << file.c_str() << "\n";
+
+		FILE * f = fopen( ( string("../data/problemsF/") + file ).c_str(), "rb" );
+		if (!f)
+		{
+			cerr << "cannot open " << file.c_str() << ":(\n";
+			return;
+		}
+
+		unsigned char xr;
+		const size_t sz = fread_s( &xr, 1, 1, 1, f );
+		int r = xr;
+		vm.R = r;
+		vm.filled = 0;
+		int i=0, j=0, k=0;
+		for (int a=0; a<((r*r*r+7)/8); a++)
+		{
+			unsigned char z;
+			const size_t sz = fread_s( &z, 1, 1, 1, f );
+			for (int b=0; b<8; b++)
+			{
+				vm.m[i][j][k] = ((z>>b)&1);
+				if (vm.m[i][j][k]) vm.filled++;
+				k++;
+				if (k==r) { k=0; j++; }
+				if (j==r) { j=0; i++; }
+				if (i==r) break;
+			}
+		}
+
+		fclose( f );
+
+		cerr << "ok! R=" << r << "\n";
+	}
+
+	void reset()
+	{
+		ss_vm = vm;
+		int R = ss_vm.R;
+		ss_vm.filled = 0;
+		for (int a=0; a<R; a++)
+			for (int b=0; b<R; b++)
+				for (int c=0; c<R; c++)
+					ss_vm.m[a][b][c] = false;
+		for (int a=0; a<kMaxBots; a++)
+			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a, true };
+			else bots[a] = { { -10, -10, -10 }, 0, a, false };
+	}
+
+	void perform_command( TraceCommand cmd )
+	{
+		if (cmd.tp == CT_HALT)
+		{
+			for (int a=0; a<kMaxBots; a++)
+				bots[a].active = false;
+		}
+		else if (cmd.tp == CT_WAIT)
+		{
+		}
+		else if (cmd.tp == CT_FLIP)
+		{
+		}
+		else if (cmd.tp == CT_S_MOVE)
+		{
+			bots[cmd.bid].pos = bots[cmd.bid].pos + cmd.p1;
+		}
+		else if (cmd.tp == CT_L_MOVE)
+		{
+			bots[cmd.bid].pos = bots[cmd.bid].pos + cmd.p1 + cmd.p2;
+		}
+		else if (cmd.tp == CT_FUSION_P)
+		{
+			for (int a=0; a<kMaxBots; a++)
+				if (bots[a].active && bots[a].pos == bots[cmd.bid].pos + cmd.p1)
+				{
+					bots[cmd.bid].seeds |= ( bots[a].seeds | ((long long)1 << a) );
+					bots[a].active = false;
+					bots[a].seeds = 0;
+					bots[a].pos = { -10, -10, -10 };
+					break;
+				}
+		}
+		else if (cmd.tp == CT_FUSION_S)
+		{
+			// this bot should be eliminated by Fusion P command
+		}
+		else if (cmd.tp == CT_FISSION)
+		{
+			vector< int > vec;
+			for (int a=0; a<kMaxBots; a++)
+				if ((bots[cmd.bid].seeds>>a)&1)
+					vec.push_back( a );
+			bots[cmd.bid].seeds = 0;
+			for (int a=cmd.m+1; a<(int)vec.size(); a++)
+				bots[cmd.bid].seeds |= ((long long)1 << vec[a]);
+			bots[ vec[0] ].active = true;
+			bots[ vec[0] ].pos = bots[ cmd.bid ].pos + cmd.p1;
+			bots[ vec[0] ].seeds = 0;
+			for (int a=1; a<cmd.m+1; a++)
+				bots[ vec[0] ].seeds |= ((long long)1 << vec[a]);
+		}
+		else if (cmd.tp == CT_FILL)
+		{
+			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = true;
+		}
+		else if (cmd.tp == CT_VOID)
+		{
+			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = false;
+		}
+	}
+} ss;
+
 int main(int argc, char * argv[])
 {
 	freopen( "output.txt", "w", stdout );
@@ -219,12 +348,12 @@ int main(int argc, char * argv[])
 			}
 			else if (cmd.tp == CT_FILL)
 			{
-				// cmd.tp = CT_VOID
+				cmd.tp = CT_VOID;
 				vec.push_back( cmd );
 			}
 			else if (cmd.tp == CT_VOID)
 			{
-				// cmd.tp = CT_FILL
+				cmd.tp = CT_FILL;
 				vec.push_back( cmd );
 			}
 			else if (cmd.tp == CT_UNDEFINED)
@@ -257,13 +386,44 @@ int main(int argc, char * argv[])
 	}
 
 	reverse( rev_cmd.begin(), rev_cmd.end() );
+	rev_cmd.push_back( trace_cmd[(int)trace_cmd.size()-1] );
 
 	for (int i=0; i<(int)rev_cmd.size(); i++)
 	{
 		for (int j=0; j<(int)rev_cmd[i].size(); j++)
-			cout << rev_cmd[i][j].cmd_to_string( true, false, false, true ).c_str() << "; ";
+			cout << rev_cmd[i][j].cmd_to_string( true, false, true, false ).c_str() << "; ";
 		cout << "\n";
 	}
+
+	ss.load_from_file( "FA001_tgt.mdl" );
+	ss.reset();
+
+	Matrix * ma = new Matrix();
+	ma->load_from_file( "../data/problemsF/" "FA001_tgt.mdl" );
+
+	FileTraceWriter * wtf = new FileTraceWriter( "FA1_reversu11.nbt.gz", ma->R, ma );
+	for (int i=0; i<(int)rev_cmd.size(); i++)
+	{
+		for (int j=0; j<(int)rev_cmd[i].size(); j++)
+		{
+			TraceCommand cmd = rev_cmd[i][j];
+			if (cmd.tp == CT_HALT) wtf->halt();
+			else if (cmd.tp == CT_WAIT) wtf->wait();
+			else if (cmd.tp == CT_FLIP) wtf->flip();
+			else if (cmd.tp == CT_S_MOVE) wtf->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_L_MOVE) wtf->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1+cmd.p2 ); //{ ass( false ); }
+			else if (cmd.tp == CT_FUSION_P) wtf->fusion_p( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_FUSION_S) wtf->fusion_s( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_FISSION) wtf->fission( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1, cmd.m );
+			else if (cmd.tp == CT_FILL) wtf->fill( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_VOID) wtf->void_( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_UNDEFINED) { ass( false ); }
+			ss.perform_command( cmd );
+		}
+	}
+	delete wtf;
+
+	delete ma;
 
 	return 0;
 }

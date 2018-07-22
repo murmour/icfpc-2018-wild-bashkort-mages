@@ -126,6 +126,9 @@
     <ClInclude Include="..\nanovisu\trace.h" />
     <ClInclude Include="..\Solver\trace_writer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="output.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
