@@ -144,7 +144,11 @@ struct TraceCommand
 			else if (tp==CT_L_MOVE) re += coord_to_string( p1 ) + " " + coord_to_string( p2 );
 			else if (tp==CT_FUSION_P) re += coord_to_string( p1 );
 			else if (tp==CT_FUSION_S) re += coord_to_string( p1 );
+#ifdef __linux__
 			else if (tp==CT_FISSION) re += coord_to_string( p1 ) + " " + std::to_string( m );
+#else
+			else if (tp == CT_FISSION) re += coord_to_string(p1) + " " + string(_itoa(m, str, 10));
+#endif
 			else if (tp==CT_FILL) re += coord_to_string( p1 );
 		}
 
