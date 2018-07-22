@@ -18,10 +18,22 @@ const Point kDeltas6[6] = {
 	{  0, 0, 1 },
 };
 
-FileTraceWriter::FileTraceWriter(const char * fname, int R) : R(R)
+FileTraceWriter::FileTraceWriter(const char * fname, int R, Matrix *src) : R(R)
 {
 	f = gzopen(fname, "wb");
 	energy = 3 * R * R * R + 20;
+	if (src)
+	{
+		Assert(R == src->R);
+		mat.R = src->R;
+		for (int i = 0; i < R; i++)
+			for (int j = 0; j < R; j++)
+				memcpy(mat.m[i][j], src->m[i][j], R);
+	}
+	else
+	{
+		mat.clear(R);
+	}
 }
 
 FileTraceWriter::~FileTraceWriter()
@@ -39,6 +51,12 @@ void FileTraceWriter::next()
 		cur_bot = 0;
 		if (n_bots > 0)
 			energy += (high_harmonics ? 30 : 3) * R * R * R + 20 * n_bots;
+		if (!gr_ops.empty())
+		{
+			for (auto p : gr_ops)
+				Assert(p.first.get_bots() == p.second);
+			gr_ops.clear();
+		}
 	}
 }
 
@@ -136,8 +154,16 @@ void FileTraceWriter::fill(const Point & from, const Point & to)
 {
 	u8 data = (get_nd(from, to) << 3) + 3;
 	gzwrite(f, &data, 1);
-	energy += 12;
-	n_filled++;
+	if (!mat[to])
+	{
+		energy += 12;
+		mat[to] = true;
+		n_filled++;
+	}
+	else
+	{
+		energy += 6;
+	}
 	next();
 }
 
@@ -153,41 +179,134 @@ void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 	next();
 }
 
-void FileTraceWriter::do_command(Command cmd, int bot_id)
+void FileTraceWriter::void_(const Point &from, const Point &to)
+{
+	u8 data = (get_nd(from, to) << 3) + 2;
+	gzwrite(f, &data, 1);
+	if (mat[to])
+	{
+		energy -= 12;
+		mat[to] = false;
+		n_filled--;
+	}
+	else
+	{
+		energy += 3;
+	}
+	next();
+}
+
+void FileTraceWriter::g_fill(const Point &from, const Point &to, const Point & fd)
+{
+	u8 data[4];
+	data[0] = (get_nd(from, to) << 3) + 1;
+	Assert(fd.is_fd());
+	data[1] = u8(fd.x + 30);
+	data[2] = u8(fd.y + 30);
+	data[3] = u8(fd.z + 30);
+	gzwrite(f, &data, 4);
+	Region r(to, to + fd);
+	if (gr_ops.find(r) == gr_ops.end())
+	{
+		gr_ops[r] = 1;
+		r.for_each([&](Point p) {
+			if (!mat[p])
+			{
+				energy += 12;
+				mat[p] = true;
+				n_filled++;
+			}
+			else
+			{
+				energy += 6;
+			}
+		});
+	}
+	else
+	{
+		gr_ops[r]++;
+	}
+}
+
+void FileTraceWriter::g_void(const Point &from, const Point &to, const Point & fd)
+{
+	u8 data[4];
+	data[0] = (get_nd(from, to) << 3) + 0;
+	Assert(fd.is_fd());
+	data[1] = u8(fd.x + 30);
+	data[2] = u8(fd.y + 30);
+	data[3] = u8(fd.z + 30);
+	gzwrite(f, &data, 4);
+	Region r(to, to + fd);
+	if (gr_ops.find(r) == gr_ops.end())
+	{
+		gr_ops[r] = 1;
+		r.for_each([&](Point p) {
+			if (mat[p])
+			{
+				energy -= 12;
+				mat[p] = false;
+				n_filled--;
+			}
+			else
+			{
+				energy += 3;
+			}
+		});
+	}
+	else
+	{
+		gr_ops[r]++;
+	}
+}
+
+Point FileTraceWriter::do_command(const Point &p, Command cmd, int bot_id)
 {
 	Assert(bot_id == cur_bot);
+	Point nd = Point({ cmd.dx, cmd.dy, cmd.dz });
+	Point to = p + nd;
 	switch (cmd.ty)
 	{
 	case cmdHalt:
 		halt();
-		break;
+		return p;
 	case cmdWait:
 		wait();
-		break;
+		return p;
 	case cmdFlip:
 		flip();
-		break;
+		return p;
 	case cmdMove:
-		move(Point::Origin, { cmd.dx, cmd.dy, cmd.dz }, false);
-		break;
+		move(p, to, false);
+		return to;
 	case cmdMoveR:
-		move(Point::Origin, { cmd.dx, cmd.dy, cmd.dz }, true);
-		break;
+		move(p, to, true);
+		return to;
 	case cmdFusionP:
-		fusion_p(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
-		break;
+		fusion_p(p, to);
+		return p;
 	case cmdFusionS:
-		fusion_s(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
-		break;
+		fusion_s(p, to);
+		return p;
 	case cmdFill:
-		fill(Point::Origin, { cmd.dx, cmd.dy, cmd.dz });
-		break;
+		fill(p, to);
+		return p;
 	case cmdFission:
-		fission(Point::Origin, { (cmd.dx & 3) - 1, cmd.dy, cmd.dz }, cmd.dx >> 2);
-		break;
+		fission(p, to, cmd.fdx);
+		return p;
+	case cmdVoid:
+		void_(p, to);
+		return p;
+	case cmdGFill:
+		g_fill(p, to, { cmd.fdx, cmd.fdy, cmd.fdz });
+		return p;
+	case cmdGVoid:
+		g_void(p, to, { cmd.fdx, cmd.fdy, cmd.fdz });
+		return p;
 	default:
 		Assert(false);
 	}
+	return Point::Origin;
 }
 
 bool Matrix::load_from_file(const char * filename)
@@ -256,7 +375,7 @@ void collect_commands(TraceWriter * w, const std::vector<Bot*> &bots_)
 			if (i >= bots[j]->mw.commands.size())
 				w->wait();
 			else
-				w->do_command(bots[j]->mw.commands[i], j);
+				bots[j]->mw.p0 = w->do_command(bots[j]->mw.p0, bots[j]->mw.commands[i], j);
 		}
 	for (auto b : bots) b->mw.commands.clear();
 }
@@ -280,52 +399,89 @@ TSolverFun GetSolver(const std::string id)
 
 void MemoryTraceWriter::halt()
 {
-	commands.push_back({ 0, 0, 0, cmdHalt });
+	add({ 0, 0, 0, cmdHalt });
 }
 
 void MemoryTraceWriter::wait()
 {
-	commands.push_back({ 0, 0, 0, cmdWait });
+	add({ 0, 0, 0, cmdWait });
 }
 
 void MemoryTraceWriter::flip()
 {
-	commands.push_back({ 0, 0, 0, cmdFlip });
+	add({ 0, 0, 0, cmdFlip });
 }
 
 void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
 {
 	auto d = from.to(to);
-	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), reverse_order ? cmdMoveR : cmdMove });
+	add({ i8(d.x), i8(d.y), i8(d.z), reverse_order ? cmdMoveR : cmdMove });
 }
 
 void MemoryTraceWriter::fusion_p(const Point & from, const Point & to)
 {
 	auto d = from.to(to);
-	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFusionP });
+	add({ i8(d.x), i8(d.y), i8(d.z), cmdFusionP });
 }
 
 void MemoryTraceWriter::fusion_s(const Point & from, const Point & to)
 {
 	auto d = from.to(to);
-	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFusionS });
+	add({ i8(d.x), i8(d.y), i8(d.z), cmdFusionS });
 }
 
 void MemoryTraceWriter::fill(const Point & from, const Point & to)
 {
 	auto d = from.to(to);
-	commands.push_back({ i8(d.x), i8(d.y), i8(d.z), cmdFill });
+	add({ i8(d.x), i8(d.y), i8(d.z), cmdFill });
+}
+
+void MemoryTraceWriter::void_(const Point & from, const Point & to)
+{
+	auto d = from.to(to);
+	add({ i8(d.x), i8(d.y), i8(d.z), cmdVoid });
+}
+
+void MemoryTraceWriter::g_fill(const Point & from, const Point & to, const Point & fd)
+{
+	auto d = from.to(to);
+	Command t({ i8(d.x), i8(d.y), i8(d.z), cmdGFill });
+	t.fdx = i8(fd.x);
+	t.fdy = i8(fd.y);
+	t.fdz = i8(fd.z);
+	add(t);
+}
+
+void MemoryTraceWriter::g_void(const Point & from, const Point & to, const Point & fd)
+{
+	auto d = from.to(to);
+	Command t({ i8(d.x), i8(d.y), i8(d.z), cmdGVoid });
+	t.fdx = i8(fd.x);
+	t.fdy = i8(fd.y);
+	t.fdz = i8(fd.z);
+	add(t);
+}
+
+void MemoryTraceWriter::add(const Command & cmd)
+{
+	if (commands.empty()) 
+		p0 = bot->pos;
+	commands.push_back(cmd);
 }
 
 void MemoryTraceWriter::fission(const Point & from, const Point & to, int m)
 {
 	auto d = from.to(to);
-	commands.push_back({ i8(d.x + 1 + (m << 2)), i8(d.y), i8(d.z), cmdFission });
+	Command t({ i8(d.x), i8(d.y), i8(d.z), cmdFission });
+	t.fdx = i8(m);
+	add(t);
 }
 
-void MemoryTraceWriter::do_command(Command cmd, int bot_id)
+Point MemoryTraceWriter::do_command(const Point &p, Command cmd, int bot_id)
 {
-	commands.push_back(cmd);
+	Assert(false);
+	add(cmd);
+	return p;
 }
 
 static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)

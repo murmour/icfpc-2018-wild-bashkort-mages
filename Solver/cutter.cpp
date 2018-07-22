@@ -85,16 +85,16 @@ struct CutterSolver
 					int t = (b->left + b->right) / 2 + 1;
 					Point pos = b->pos;
 					pos.x++;
-					bots[t] = Bot(pos, make_seeds(low + 1, low + m), low);
-					bots[t].step = step;
-					bots[t].parent = b->left; // not id!
-					bots[t].left = t;
-					bots[t].right = b->right;
+					bots[t] = new Bot(pos, make_seeds(low + 1, low + m), low);
+					bots[t]->step = step;
+					bots[t]->parent = b->left; // not id!
+					bots[t]->left = t;
+					bots[t]->right = b->right;
 					b->right = t - 1;
 					b->seeds = make_seeds(low + m + 1, high);
 
 					b->mw.fission(b->pos, pos, give_to_child - 1);
-					new_acitve.push_back(&bots[t]);
+					new_acitve.push_back(bots[t]);
 				}
 			}
 		}
@@ -109,8 +109,8 @@ struct CutterSolver
 		int max_step = 0;
 		for (u32 i = 0; i < lims.size(); i++)
 		{
-			active.push_back(&bots[i]);
-			max_step = max(max_step, bots[i].step);
+			active.push_back(bots[i]);
+			max_step = max(max_step, bots[i]->step);
 		}
 		while (active.size() > 1)
 		{
@@ -122,7 +122,7 @@ struct CutterSolver
 				if (b->step == max_step)
 				{
 					// where to fusion?
-					Point pos = bots[active[i]->parent].pos;
+					Point pos = bots[active[i]->parent]->pos;
 					f[b->parent] = true;
 					pos.x++;
 					b->pos = reach_cell(b->pos, pos, &cur, &b->mw, true);
@@ -167,7 +167,7 @@ struct CutterSolver
 		if (System::HasArg("bots"))
 		{
 			n = atoi(System::GetArgValue("bots").c_str());
-			assert(n >= 1 && n <= 20);
+			assert(n >= 1 && n <= kMaxBots);
 		}
 		int weight[kMaxR] = { 0 };
 		int tot_w = 0;
@@ -199,10 +199,11 @@ struct CutterSolver
 		cur.clear(R);
 
 		// ok, now fission...
-		bots[0] = Bot(Point::Origin, make_seeds(1, n-1), 0);
-		bots[0].left = 0;
-		bots[0].right = n - 1;
-		fission({ &bots[0] }, 1);
+		memset(bots, 0, sizeof(bots));
+		bots[0] = new Bot(Point::Origin, make_seeds(1, n-1), 0);
+		bots[0]->left = 0;
+		bots[0]->right = n - 1;
+		fission({ bots[0] }, 1);
 
 		for (int seg = 0; seg < n; seg++)
 		{
@@ -226,27 +227,17 @@ struct CutterSolver
 					}
 			Assert(x0 != -1);
 			
-			BFS(&bots[seg], { x0, 0, z0 }, &bots[seg].mw);
+			BFS(bots[seg], { x0, 0, z0 }, &bots[seg]->mw);
 
-			bots[seg].pos = reach_cell(bots[seg].pos, starts[seg], &cur, &bots[seg].mw, true);
+			bots[seg]->pos = reach_cell(bots[seg]->pos, starts[seg], &cur, &bots[seg]->mw, true);
 		}
 		vector<Bot*> all_bots;
-		for (int i = 0; i < n; i++) all_bots.push_back(bots + i);
+		for (int i = 0; i < n; i++) all_bots.push_back(bots[i]);
 		collect_commands(w, all_bots);
 		cur.set_x_limits(-1, -1);
 		fusion();
 		w->halt();
-		validate();
 		return 0;
-	}
-
-	void validate()
-	{
-		for (int x = 0; x < R; x++)
-			for (int y = 0; y < R; y++)
-				for (int z = 0; z < R; z++)
-					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
-						Assert(false);
 	}
 
 	vector<int> lims, lims0;
@@ -256,7 +247,7 @@ struct CutterSolver
 	Matrix cur;
 	Matrix temp_bfs;
 	int R, XL, XR;
-	Bot bots[kMaxBots];
+	Bot *bots[kMaxBots];
 };
 
 int cutter_solver(const Matrix *target, TraceWriter *writer)

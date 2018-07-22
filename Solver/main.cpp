@@ -16,7 +16,8 @@ int main(int argc, char** argv)
 	auto out_file = System::GetArgValue("out");
 	auto in_file = System::GetArgValue("in");
 
-	if (get_type(in_file) != 'A') return 42;
+	char ptype = get_type(in_file);
+	if (ptype != 'A') return 42;
 
 	Matrix *model = new Matrix();
 
@@ -40,6 +41,14 @@ int main(int argc, char** argv)
 
 	solver_f(model, tw);
 
+	if (ptype == 'D')
+	{
+		Assert(tw->get_filled_count() == 0);
+	}
+	else
+	{
+		Assert(tw->get_matrix().check_equal(*model));
+	}
 	Assert(tw->get_filled_count() == model->get_filled_count());
 
 	printf("%lld", tw->get_energy()); // print total energy spent

@@ -7,8 +7,8 @@ struct StupidSolver
 	
 	void dfs(Point p)
 	{
-		b.pos = reach_cell(b.pos, p, &cur, w);
-		w->fill(b.pos, p);
+		b->pos = reach_cell(b->pos, p, &cur, w);
+		w->fill(b->pos, p);
 		cur[p] = true;
 		for (auto d : kDeltas6)
 		{
@@ -40,20 +40,10 @@ struct StupidSolver
 		cur.clear(R);
 		dfs({ x0, 0, z0 });
 
-		b.pos = reach_cell(b.pos, { 0, 0, 0 }, &cur, w, true);
+		b->pos = reach_cell(b->pos, { 0, 0, 0 }, &cur, w, true);
 
-		validate();
 		w->halt();
 		return 0;
-	}
-
-	void validate()
-	{
-		for (int x = 0; x < R; x++)
-			for (int y = 0; y < R; y++)
-				for (int z = 0; z < R; z++)
-					if (bool(m->m[x][y][z]) != bool(cur.m[x][y][z]))
-						Assert(false);
 	}
 
 	int operator () (const Matrix *m, TraceWriter *w)
@@ -68,7 +58,7 @@ struct StupidSolver
 	TraceWriter *w;
 	Matrix cur;
 	int R;
-	Bot b;
+	Bot *b;
 };
 
 int stupid_solver(const Matrix *target, TraceWriter *writer)
