@@ -615,6 +615,22 @@ void load_trace_file( string file )
 	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
 }
 
+void go_to_command( int i )
+{
+	if (i < cur_cmd)
+	{
+		ss.reset();
+		cur_cmd = 0;
+	}
+	
+	while (cur_cmd < i)
+	{
+		for (int i=0; i<(int)trace_cmd[cur_cmd].size(); i++)
+				ss.perform_command( trace_cmd[cur_cmd][i] );
+			cur_cmd++;
+	}
+}
+
 void nano_display_code()
 {
 	if (show_demo_window)
@@ -722,11 +738,14 @@ void nano_display_code()
 			{
 				ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImGui::GetColorU32(ImGuiCol_Header));
 				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGui::GetColorU32(ImGuiCol_Header));
-				ImGui::Selectable( "", i==cur_cmd, 0, ImVec2(0, ImGui::GetFrameHeightWithSpacing()-4 ) );
-				ImGui::SameLine();
+				char str[30];
+				sprintf( str, "%d##line%d", i, i );
+				if (ImGui::Selectable( str, i==cur_cmd, 0, ImVec2(0, ImGui::GetFrameHeightWithSpacing()-4 ) ))
+					go_to_command( i );
+				//ImGui::SameLine();
 				if (i==cur_cmd)
 					ImGui::SetScrollHere(0.5f);
-				ImGui::Text( "%d", i );
+				//ImGui::Text( "%d", i );
 				for (int j=0; j<(int)trace_cmd[i].size(); j++)
 				{
 					ImGui::SameLine();
