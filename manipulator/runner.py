@@ -13,8 +13,8 @@ temp_counter = 0
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print('Usage: runner.py executable solver solver_alias low_index high_index '
-              'job_count low_bots high_bots kinds')
+        print('Usage: runner.py executable solver solver_alias low_index '
+              'high_index job_count low_bots high_bots kinds')
         sys.exit(1)
 
     executable = sys.argv[1]
@@ -30,7 +30,10 @@ if __name__ == '__main__':
     def start_solving(p):
         global temp_counter
         job = {}
-        trace_base = '%s%s_%s%d' % (p['prefix'], p['id'], solver_alias, p['bots'])
+        trace_base = '%s%s_%s%d' % (p['prefix'],
+                                    p['id'],
+                                    solver_alias,
+                                    p['bots'])
         job['trace_file'] = common.traces_dir + trace_base + '.nbt.gz'
         job['meta_file'] = common.traces_dir + trace_base + '.meta'
         if os.path.isfile(job['meta_file']):
@@ -40,12 +43,12 @@ if __name__ == '__main__':
         job['temp_file'] = 'temp/tmp%d' % temp_counter
         temp_counter += 1
         job['process'] = subprocess.Popen([executable,
-                                              '-in', p['fname'],
-                                              '-out', job['temp_file'],
-                                              '-solver', solver,
-                                              '-bots', str(p['bots'])],
-                                             stdin=subprocess.PIPE,
-                                             stdout=subprocess.PIPE)
+                                           '-in', p['fname'],
+                                           '-out', job['temp_file'],
+                                           '-solver', solver,
+                                           '-bots', str(p['bots'])],
+                                          stdin=subprocess.PIPE,
+                                          stdout=subprocess.PIPE)
         return job
 
     def finish_solving(job, retcode):
@@ -64,9 +67,10 @@ if __name__ == '__main__':
     queue = []
     for bots in range(low_bots, high_bots+1):
         for p in ps:
-            p2 = dict(p)
-            p2['bots'] = bots
-            queue.append(p2)
+            if not (p['prefix'] == 'SA' and bots == 1):
+                p2 = dict(p)
+                p2['bots'] = bots
+                queue.append(p2)
 
     pool = [None] * job_count
     left = len(queue)
