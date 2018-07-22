@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
 	FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, ptype == 'A' ? nullptr : model);
 
-	string solver = "stupid"; // default solver
+	string solver = "bfs"; // default solver
 	if (System::HasArg("solver"))
 		solver = System::GetArgValue("solver");
 	auto solver_f = GetSolver(solver);
