@@ -393,6 +393,10 @@ struct SYSTEM_STATE
 		{
 			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = true;
 		}
+		else if (cmd.tp == CT_VOID)
+		{
+			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = false;
+		}
 	}
 } ss;
 
