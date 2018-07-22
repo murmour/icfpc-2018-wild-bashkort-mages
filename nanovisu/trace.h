@@ -27,6 +27,7 @@ enum CommandType
 	CT_FUSION_S,
 	CT_FISSION,
 	CT_FILL,
+	CT_VOID,
 	CT_UNDEFINED
 };
 
@@ -128,6 +129,7 @@ struct TraceCommand
 		else if (tp==CT_FUSION_S) cc = (shrt ? "FS" : "Fusion S");
 		else if (tp==CT_FISSION) cc = (shrt ? "Fi" : "Fission");
 		else if (tp==CT_FILL) cc = (shrt ? "FL" : "Fill");
+		else if (tp==CT_VOID) cc = (shrt ? "VD" : "Void");
 		else if (tp==CT_UNDEFINED) cc = (shrt ? "UD" : "Undefined");
 
 		if (!no)
@@ -150,6 +152,7 @@ struct TraceCommand
 			else if (tp == CT_FISSION) re += coord_to_string(p1) + " " + string(_itoa(m, str, 10));
 #endif
 			else if (tp==CT_FILL) re += coord_to_string( p1 );
+			else if (tp==CT_VOID) re += coord_to_string( p1 );
 		}
 
 		return re;

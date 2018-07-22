@@ -104,6 +104,11 @@ TraceCommand TraceReader::read_next()
 		re.tp = CT_FILL;
 		re.p1 = nd_to_point( ch>>3 );
 	}
+	else if (code==2)
+	{
+		re.tp = CT_VOID;
+		re.p1 = nd_to_point( ch>>3 );
+	}
 
 	return re;
 }
