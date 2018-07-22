@@ -1,5 +1,8 @@
+
 #include "system.h"
 #include "trace_writer.h"
+#include "reversu.h"
+
 
 using namespace std;
 
@@ -75,7 +78,6 @@ int main(int argc, char** argv)
 
 	else if (ptype == 'D')
     {
-		return 66; // todo
 		const string rev_out_file = out_file + ".rev";
 		FileTraceWriter *tw = new FileTraceWriter(rev_out_file.c_str(), model->R, nullptr);
 		solver_f(nullptr, model, tw);
@@ -85,8 +87,8 @@ int main(int argc, char** argv)
 		delete tw;
 
 		tw = new FileTraceWriter(out_file.c_str(), model->R, model);
-		// todo: reverse rev_out_file into tw!
-		tw->halt();
+        reverse_trace(rev_out_file, tw);
+        tw->halt();
 		Assert(tw->get_filled_count() == 0);
 
 		printf("%lld", tw->get_energy()); // print total energy spent
