@@ -410,6 +410,8 @@ void refresh_list_of_model_files()
 				model_files.push_back( string(ent->d_name) );
 		closedir(dir);
 	}
+
+	sort( model_files.begin(), model_files.end() );
 }
 
 vector< string > parse_filename( string x )
@@ -517,6 +519,7 @@ void load_model_file( string file )
 	}
 	cur_trace = "not selected";
 	trace_cmd.clear();
+	sort( trace_files.begin(), trace_files.end() );
 	cerr << "ok! traces=" << trace_files.size() << "\n";
 }
 
@@ -677,6 +680,12 @@ void nano_display_code()
 		{
 			for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
 			{
+				ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImGui::GetColorU32(ImGuiCol_Header));
+				ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImGui::GetColorU32(ImGuiCol_Header));
+				ImGui::Selectable( "", i==cur_cmd, 0, ImVec2(0, ImGui::GetFrameHeightWithSpacing()-4 ) );
+				ImGui::SameLine();
+				if (i==cur_cmd)
+					ImGui::SetScrollHere(0.5f);
 				ImGui::Text( "%d", i );
 				for (int j=0; j<(int)trace_cmd[i].size(); j++)
 				{
@@ -690,6 +699,7 @@ void nano_display_code()
 						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true ).c_str() );
 					ImGui::PopStyleColor(3);
 				}
+				ImGui::PopStyleColor(2);
 			}
 		}
 		ImGui::EndChild();
