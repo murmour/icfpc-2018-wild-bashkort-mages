@@ -41,8 +41,6 @@ struct RipBot
 
 static void load_trace_file( string file )
 {
-	cerr << "loading trace file " << file.c_str() << "\n";
-
 	TraceReader tr;
 	if (! tr.open_file(file.c_str() ) )
 	{
@@ -123,8 +121,6 @@ static void load_trace_file( string file )
 			vec.clear();
 		}
 	}
-
-	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
 }
 
 struct SYSTEM_STATE
