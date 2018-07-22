@@ -13,22 +13,23 @@ temp_counter = 0
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print('Usage: runner.py executable solver low_index high_index '
+        print('Usage: runner.py executable solver solver_alias low_index high_index '
               'job_count low_bots high_bots')
         sys.exit(1)
 
     executable = sys.argv[1]
     solver = sys.argv[2]
-    low_index = int(sys.argv[3])
-    high_index = int(sys.argv[4])
-    job_count = int(sys.argv[5])
-    low_bots = int(sys.argv[6])
-    high_bots = int(sys.argv[7])
+    solver_alias = sys.argv[3]
+    low_index = int(sys.argv[4])
+    high_index = int(sys.argv[5])
+    job_count = int(sys.argv[6])
+    low_bots = int(sys.argv[7])
+    high_bots = int(sys.argv[8])
 
     def start_solving(p):
         global temp_counter
         job = {}
-        trace_base = '%s%s_%s%d' % (p['prefix'], p['id'], solver, p['bots'])
+        trace_base = '%s%s_%s%d' % (p['prefix'], p['id'], solver_alias, p['bots'])
         job['trace_file'] = common.traces_dir + trace_base + '.nbt.gz'
         job['meta_file'] = common.traces_dir + trace_base + '.meta'
         if os.path.isfile(job['meta_file']):
