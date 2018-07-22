@@ -557,10 +557,13 @@ void load_trace_file( string file )
 	vector< ZBot > bots_rem;
 	int cur_bot = 0;
 	vector< TraceCommand > vec;
+	int ii = 0;
 	while(1)
 	{
 		TraceCommand cmd = tr.read_next();
 		cmd.bid = bots_now[cur_bot].id;
+		cmd.num = ii;
+		ii++;
 		if (cmd.tp == CT_UNDEFINED)
 		{
 			//cerr << "undefined command\n";
@@ -757,11 +760,12 @@ void nano_display_code()
 	}
 
 	ImGui::Text( "Trace Commands [%d/%d]", cur_cmd, (int)trace_cmd.size() );
-	static bool show_bids = true, show_cmd = true, short_cmd = false, show_coord = true;
+	static bool show_bids = true, show_cmd = true, short_cmd = false, show_coord = true, cmd_num = false;
 	ImGui::Checkbox( "Bot ids", &show_bids ); ImGui::SameLine();
 	ImGui::Checkbox( "Show cmd", &show_cmd ); ImGui::SameLine();
 	ImGui::Checkbox( "Short cmd", &short_cmd ); ImGui::SameLine();
-	ImGui::Checkbox( "Coords", &show_coord );
+	ImGui::Checkbox( "Coords", &show_coord ); ImGui::SameLine();
+	ImGui::Checkbox( "Cmd number", &cmd_num );
 	{
 		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true, ImGuiWindowFlags_HorizontalScrollbar );
 		ImGuiListClipper clipper(trace_cmd.size());
@@ -786,9 +790,9 @@ void nano_display_code()
 					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
-					ImGui::Button( trace_cmd[i][j].cmd_to_string( show_bids, !show_cmd, short_cmd, show_coord ).c_str() );
+					ImGui::Button( trace_cmd[i][j].cmd_to_string( show_bids, !show_cmd, short_cmd, show_coord, cmd_num ).c_str() );
 					if (ImGui::IsItemHovered())
-						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true ).c_str() );
+						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true, true ).c_str() );
 					ImGui::PopStyleColor(3);
 				}
 				ImGui::PopStyleColor(2);

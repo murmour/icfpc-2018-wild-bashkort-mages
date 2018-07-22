@@ -42,6 +42,7 @@ struct TraceCommand
 	int m = 0;
 
 	int bid = -1;
+	int num = 0;
 
 	string coord_to_string( Point p )
 	{
@@ -50,7 +51,7 @@ struct TraceCommand
 		return string(ch);
 	}
 
-	string cmd_to_string( bool sh_bid, bool no, bool shrt, bool coords)
+	string cmd_to_string( bool sh_bid, bool no, bool shrt, bool coords, bool num_f )
 	{
 		string re = "";
 		if (sh_bid)
@@ -93,6 +94,16 @@ struct TraceCommand
 #endif
 			else if (tp==CT_FILL) re += coord_to_string( p1 );
 			else if (tp==CT_VOID) re += coord_to_string( p1 );
+		}
+
+		if (num_f)
+		{
+			if (re!="") re += " ";
+#ifdef __linux__
+			re += std::to_string( num );
+#else
+			re += string(_itoa(num, str, 10));
+#endif
 		}
 
 		return re;
