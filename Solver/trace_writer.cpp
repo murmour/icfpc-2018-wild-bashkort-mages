@@ -568,12 +568,12 @@ static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w,
 					cnt++;
 				else
 				{
-					if (cnt > 0) xpath.push_back({prev, cnt});  //moveto(P + kDeltas6[prev] * cnt);
+					if (cnt > 0) xpath.push_back({prev, cnt});
 					prev = d;
 					cnt = 1;
 				}
 			}
-			if (cnt > 0) xpath.push_back({ prev, cnt }); // moveto(P + kDeltas6[prev] * cnt);
+			if (cnt > 0) xpath.push_back({ prev, cnt });
 
 			int k = (int)xpath.size();
 			for (int i = 0; i < k; i++)

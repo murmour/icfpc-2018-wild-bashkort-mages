@@ -16,6 +16,57 @@ struct CutterpillarSolver
 	{
 		queue<Point> q;
 
+		vector<Point> cells;
+		auto add_cell = [&](Point t)
+		{
+			cells.push_back(t);
+			if (cells.size() < 3) return;
+			if (!b->pos.is_near(cells[0]))
+			{
+				int old_moves = w->get_n_moves();
+				auto old_pos = b->pos;
+				
+				if (cells[0].to(cells[2]).mlen() <= 2)
+				{
+					reach_cell(b, cells[2], &cur, w);
+					if (b->pos.is_near(cells[0]) && b->pos.is_near(cells[1]))
+					{
+						// great!
+						w->fill(b->pos, cells[0]);
+						cells.erase(cells.begin());
+						return;
+					}
+					else
+					{
+						// backtrack
+						Assert(w->backtrack(old_moves));
+						b->pos = old_pos;
+					}
+				}				
+				if (cells[0].to(cells[1]).mlen() <= 2)
+				{
+					reach_cell(b, cells[1], &cur, w);
+					if (b->pos.is_near(cells[0]))
+					{
+						// great!
+						w->fill(b->pos, cells[0]);
+						cells.erase(cells.begin());
+						return;
+					}
+					else
+					{
+						// backtrack
+						Assert(w->backtrack(old_moves));
+						b->pos = old_pos;
+					}
+				}
+			}
+			// fallback
+			reach_cell(b, cells[0], &cur, w);
+			w->fill(b->pos, cells[0]);
+			cells.erase(cells.begin());
+		};
+
 		temp_bfs.clear(R);
 		auto push = [&](Point p) {
 			if (temp_bfs[p]) return;
@@ -27,11 +78,11 @@ struct CutterpillarSolver
 		while (!q.empty())
 		{
 			auto t = q.front(); q.pop();
-			reach_cell(b, t, &cur, w);
-			w->fill(b->pos, t);
+			//reach_cell(b, t, &cur, w);
+			//w->fill(b->pos, t);
+			add_cell(t);
 			cur[t] = true;
 			for (auto d : Deltas26())
-				//for (auto d : kDeltas6)
 			{
 				auto a = t + d;
 				if (!cur.is_valid(a)) continue;
@@ -42,6 +93,13 @@ struct CutterpillarSolver
 						push(a);
 				}
 			}
+		}
+
+		// process remaining cells
+		for (auto t : cells)
+		{
+			reach_cell(b, t, &cur, w);
+			w->fill(b->pos, t);
 		}
 	}
 
