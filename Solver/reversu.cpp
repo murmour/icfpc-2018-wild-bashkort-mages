@@ -331,7 +331,7 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 		for (int j=0; j<(int)rev_cmd[i].size(); j++)
 		{
 			TraceCommand cmd = rev_cmd[i][j];
-			if (cmd.tp == CT_HALT) tw->halt();
+			if (cmd.tp == CT_HALT) /* nothing */;
 			else if (cmd.tp == CT_WAIT) tw->wait();
 			else if (cmd.tp == CT_FLIP) tw->flip();
 			else if (cmd.tp == CT_S_MOVE) tw->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
