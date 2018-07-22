@@ -5,10 +5,11 @@ using namespace std;
 
 struct CutterpillarzSolver
 {
-	CutterpillarzSolver(const Matrix *m, TraceWriter *w)
+	CutterpillarzSolver(const Matrix *m, TraceWriter *w, bool new_search)
 	{
 		this->m = m;
 		this->w = w;
+		this->new_search = new_search;
 		R = m->R;
 	}
 
@@ -77,9 +78,12 @@ struct CutterpillarzSolver
 		while (!q.empty())
 		{
 			auto t = q.front(); q.pop();
-			//reach_cell(b, t, &cur, w);
-			//w->fill(b->pos, t);
-			add_cell(t);
+			if (new_search) {
+				add_cell(t);
+			} else {
+				reach_cell(b, t, &cur, w);
+				w->fill(b->pos, t);
+			}
 			cur[t] = true;
 			for (auto d : Deltas26())
 			{
@@ -317,16 +321,28 @@ struct CutterpillarzSolver
 	Matrix temp_bfs;
 	int R, ZL, ZR;
 	Bot *bots[kMaxBots];
+	bool new_search;
 };
 
 int cutterpillarz_solver(const Matrix *src, const Matrix *target, TraceWriter *writer)
 {
 	if (src) exit(42);
 	Assert(target);
-	auto solver = new CutterpillarzSolver(target, writer);
+	auto solver = new CutterpillarzSolver(target, writer, true);
+	int res = solver->solve();
+	delete solver;
+	return res;
+}
+
+int cutterpillarz_solver_old(const Matrix *src, const Matrix *target, TraceWriter *writer)
+{
+	if (src) exit(42);
+	Assert(target);
+	auto solver = new CutterpillarzSolver(target, writer, false);
 	int res = solver->solve();
 	delete solver;
 	return res;
 }
 
 REG_SOLVER("cutterpillarz", cutterpillarz_solver);
+REG_SOLVER("cutterpillarzx", cutterpillarz_solver_old);
