@@ -702,15 +702,6 @@ void nano_display_code()
 		if (ImGui::Button( "Pause" ))
 			trace_speed = 0;
 		ImGui::SameLine();
-		if (ImGui::Button( "Speed 1" ))
-			trace_speed = 1;
-		ImGui::SameLine();
-		if (ImGui::Button( "Speed 5" ))
-			trace_speed = 5;
-		ImGui::SameLine();
-		if (ImGui::Button( "Speed 10" ))
-			trace_speed = 10;
-		ImGui::SameLine();
 		if (ImGui::Button( "Step" ))
 		{
 			trace_speed = 0;
@@ -728,6 +719,20 @@ void nano_display_code()
 			ss.reset();
 			cur_cmd = 0;
 		}
+		if (ImGui::Button( "Speed 1" ))
+			trace_speed = 1;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 5" ))
+			trace_speed = 5;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 10" ))
+			trace_speed = 10;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 50" ))
+			trace_speed = 50;
+		ImGui::SameLine();
+		if (ImGui::Button( "Speed 100" ))
+			trace_speed = 100;
 		ImGui::Text( "Speed: %d\n", trace_speed );
 	}
 	else
