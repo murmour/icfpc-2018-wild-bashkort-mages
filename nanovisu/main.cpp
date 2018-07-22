@@ -410,6 +410,7 @@ void refresh_list_of_model_files()
 				model_files.push_back( string(ent->d_name) );
 		closedir(dir);
 	}
+    std::sort(model_files.begin(), model_files.end());
 }
 
 vector< string > parse_filename( string x )
@@ -518,6 +519,7 @@ void load_model_file( string file )
 	cur_trace = "not selected";
 	trace_cmd.clear();
 	cerr << "ok! traces=" << trace_files.size() << "\n";
+    std::sort(trace_files.begin(), trace_files.end());
 }
 
 void load_trace_file( string file )
