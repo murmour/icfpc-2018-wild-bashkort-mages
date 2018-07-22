@@ -39,6 +39,9 @@
     <ClCompile Include="cutter.cpp">
       <Filter>Solvers</Filter>
     </ClCompile>
+    <ClCompile Include="cutterpillar.cpp">
+      <Filter>Solvers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace_writer.h">
