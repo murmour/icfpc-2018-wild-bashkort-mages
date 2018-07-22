@@ -24,7 +24,6 @@ void __never(int a){printf("\nOPS %d", a);}
 vector< vector< TraceCommand > > trace_cmd;
 vector< vector< TraceCommand > > rev_cmd;
 
-//constexpr const int kMaxBots = 40;
 
 struct RipBot
 {
@@ -128,67 +127,13 @@ static void load_trace_file( string file )
 	cerr << "ok! commands=" << (int)trace_cmd.size() << "\n";
 }
 
-struct VOXMAT
-{
-	int R;
-	int filled;
-	bool m[250][250][250];
-};
-
 struct SYSTEM_STATE
 {
-	VOXMAT vm;
-	VOXMAT ss_vm;
-
 	long long energy;
 	RipBot bots[kMaxBots];
 
-	void load_from_file( string file )
-	{
-		cerr << "loading model file " << file.c_str() << "\n";
-
-		FILE * f = fopen( ( string("../data/problemsF/") + file ).c_str(), "rb" );
-		if (!f)
-		{
-			cerr << "cannot open " << file.c_str() << ":(\n";
-			return;
-		}
-
-		unsigned char xr;
-		const size_t sz = fread_s( &xr, 1, 1, 1, f );
-		int r = xr;
-		vm.R = r;
-		vm.filled = 0;
-		int i=0, j=0, k=0;
-		for (int a=0; a<((r*r*r+7)/8); a++)
-		{
-			unsigned char z;
-			const size_t sz = fread_s( &z, 1, 1, 1, f );
-			for (int b=0; b<8; b++)
-			{
-				vm.m[i][j][k] = ((z>>b)&1);
-				if (vm.m[i][j][k]) vm.filled++;
-				k++;
-				if (k==r) { k=0; j++; }
-				if (j==r) { j=0; i++; }
-				if (i==r) break;
-			}
-		}
-
-		fclose( f );
-
-		cerr << "ok! R=" << r << "\n";
-	}
-
 	void reset()
 	{
-		ss_vm = vm;
-		int R = ss_vm.R;
-		ss_vm.filled = 0;
-		for (int a=0; a<R; a++)
-			for (int b=0; b<R; b++)
-				for (int c=0; c<R; c++)
-					ss_vm.m[a][b][c] = false;
 		for (int a=0; a<kMaxBots; a++)
 			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a, true };
 			else bots[a] = { { -10, -10, -10 }, 0, a, false };
@@ -245,14 +190,6 @@ struct SYSTEM_STATE
 			bots[ vec[0] ].seeds = 0;
 			for (int a=1; a<cmd.m+1; a++)
 				bots[ vec[0] ].seeds |= ((long long)1 << vec[a]);
-		}
-		else if (cmd.tp == CT_FILL)
-		{
-			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = true;
-		}
-		else if (cmd.tp == CT_VOID)
-		{
-			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = false;
 		}
 	}
 } ss;
@@ -394,7 +331,6 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 		cout << "\n";
 	}
 
-	ss.load_from_file( "FA070_tgt.mdl" );
 	ss.reset();
 
 	for (int i=0; i<(int)rev_cmd.size(); i++)
