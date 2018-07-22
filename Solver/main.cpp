@@ -49,9 +49,7 @@ int main(int argc, char** argv)
 		model2->init_sums();
 	}
 
-	FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, ptype == 'A' ? nullptr : model);
-
-	string solver = "stupid"; // default solver
+	string solver = "bfs"; // default solver
 	if (System::HasArg("solver"))
 		solver = System::GetArgValue("solver");
 	auto solver_f = GetSolver(solver);
@@ -62,11 +60,45 @@ int main(int argc, char** argv)
 	}
 
 	if (ptype == 'A')
+    {
+		FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, nullptr);
 		solver_f(nullptr, model, tw);
+
+		tw->halt();
+		Assert(tw->get_matrix().check_equal(*model));
+		Assert(tw->get_filled_count() == model->get_filled_count());
+
+		printf("%lld", tw->get_energy()); // print total energy spent
+		delete tw;
+		return 0;
+    }
+
 	else if (ptype == 'D')
-		solver_f(model, nullptr, tw);
-	else if (ptype == 'R')
+    {
+		return 66; // todo
+		const string rev_out_file = out_file + ".rev";
+		FileTraceWriter *tw = new FileTraceWriter(rev_out_file.c_str(), model->R, nullptr);
+		solver_f(nullptr, model, tw);
+		tw->halt();
+		Assert(tw->get_matrix().check_equal(*model));
+		Assert(tw->get_filled_count() == model->get_filled_count());
+		delete tw;
+
+		tw = new FileTraceWriter(out_file.c_str(), model->R, model);
+		// todo: reverse rev_out_file into tw!
+		tw->halt();
+		Assert(tw->get_filled_count() == 0);
+
+		printf("%lld", tw->get_energy()); // print total energy spent
+		delete tw;
+		return 0;
+	}
+
+	// todo
+    else if (ptype == 'R')
 	{
+		FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, model);
+
 		if (model->check_equal(*model2))
 		{
 			// no operations needed
@@ -87,22 +119,15 @@ int main(int argc, char** argv)
 		{
 			solver_f(model, model2, tw);
 		}
+
+		tw->halt();
+		Assert(tw->get_matrix().check_equal(*model));
+		Assert(tw->get_filled_count() == model->get_filled_count());
+
+		printf("%lld", tw->get_energy()); // print total energy spent
+		delete tw;
+		return 0;
 	}
 	else
 		return 44;
-
-	tw->halt();
-	if (ptype == 'D')
-	{
-		Assert(tw->get_filled_count() == 0);
-	}
-	else
-	{
-		Assert(tw->get_matrix().check_equal(*model));
-	}
-	Assert(tw->get_filled_count() == model->get_filled_count());
-
-	printf("%lld", tw->get_energy()); // print total energy spent
-	delete tw;
-	return 0;
 }

@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
         pts.sort(key = lambda pt: pt['energy'])
         def print_pt(pt):
-            return '%s(%s)' % (pt['solver'], format(pt['energy'], ',d'))
+            return '%s(%s)' % (pt['solver']+str(pt['bots']), format(pt['energy'], ',d'))
         print('%s%s: %s' % (p['prefix'], p['id'], ', '.join(print_pt(pt) for pt in pts[:4])))
 
         best = pts[0]

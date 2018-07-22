@@ -4,7 +4,7 @@ using namespace std;
 
 struct StupidSolver2
 {
-	
+
 	void BFS(Point p)
 	{
 		queue<Point> q;
@@ -91,4 +91,4 @@ int stupid2_solver(const Matrix *src, const Matrix *target, TraceWriter *writer)
 	return res;
 }
 
-REG_SOLVER("stupid3", stupid2_solver);
+REG_SOLVER("bfs", stupid2_solver);

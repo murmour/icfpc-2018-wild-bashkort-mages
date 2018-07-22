@@ -4,7 +4,7 @@ using namespace std;
 
 struct StupidSolver
 {
-	
+
 	void dfs(Point p)
 	{
 		reach_cell(b, p, &cur, w);
@@ -70,4 +70,4 @@ int stupid_solver(const Matrix *src, const Matrix *target, TraceWriter *writer)
 	return res;
 }
 
-REG_SOLVER("stupid", stupid_solver);
+REG_SOLVER("dfs", stupid_solver);

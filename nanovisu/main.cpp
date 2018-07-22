@@ -299,10 +299,14 @@ int cur_cmd;
 bool trace_mode = false;
 int trace_speed = 1;
 int picked_bot = -1;
+static bool manual_model = false;
+static bool manual_model_loaded = false;
+static bool manual_trace = false;
+static bool manual_trace_loaded = false;
 
-constexpr const int kMaxBots = 40;
+//constexpr const int kMaxBots = 40;
 
-struct Bot
+struct ZBot
 {
 	Point pos;
 	long long seeds;
@@ -321,7 +325,9 @@ struct SYSTEM_STATE
 	VOXMAT ss_vm;
 
 	long long energy;
-	Bot bots[kMaxBots];
+	ZBot bots[kMaxBots];
+
+	bool deconstruct = false;
 
 	void reset()
 	{
@@ -331,7 +337,7 @@ struct SYSTEM_STATE
 		for (int a=0; a<R; a++)
 			for (int b=0; b<R; b++)
 				for (int c=0; c<R; c++)
-					ss_vm.m[a][b][c] = false;
+					ss_vm.m[a][b][c] = (deconstruct ? vm.m[a][b][c] : false);
 		for (int a=0; a<kMaxBots; a++)
 			if (a==0) bots[a] = { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, a, true };
 			else bots[a] = { { -10, -10, -10 }, 0, a, false };
@@ -496,6 +502,8 @@ void load_model_file( string file )
 
 	cerr << "ok! R=" << r << "\n";
 
+    if (manual_trace) return;
+
 	cerr << "loading list of traces\n";
 
 	vector< string > infseq = parse_filename( file );
@@ -531,24 +539,31 @@ void load_trace_file( string file )
 {
 	cerr << "loading trace file " << file.c_str() << "\n";
 
+	string full_path = file;
+	if (!manual_trace)
+		full_path = string("../data/tracesF/") + file;
+
 	TraceReader tr;
-	if (! tr.open_file( (string("../data/tracesF/") + file).c_str() ) )
+	if (! tr.open_file( full_path.c_str() ) )
 	{
 		cerr << "cannot open " << file.c_str() << "\n";
 		return;
 	}
 	trace_cmd.clear();
 
-	vector< Bot > bots_now;
+	vector< ZBot > bots_now;
 	bots_now.push_back( { { 0, 0, 0 }, ((long long)1 << kMaxBots) - 2, 0, true } );
-	vector< Bot > bots_add;
-	vector< Bot > bots_rem;
+	vector< ZBot > bots_add;
+	vector< ZBot > bots_rem;
 	int cur_bot = 0;
 	vector< TraceCommand > vec;
+	int ii = 0;
 	while(1)
 	{
 		TraceCommand cmd = tr.read_next();
 		cmd.bid = bots_now[cur_bot].id;
+		cmd.num = ii;
+		ii++;
 		if (cmd.tp == CT_UNDEFINED)
 		{
 			//cerr << "undefined command\n";
@@ -597,7 +612,7 @@ void load_trace_file( string file )
 				bots_now.push_back( bots_add[a] );
 			for (int a=0; a<(int)bots_rem.size(); a++)
 			{
-				vector< Bot > tmp;
+				vector< ZBot > tmp;
 				for (int b=0; b<(int)bots_now.size(); b++)
 					if (bots_now[b].id != bots_rem[a].id)
 						tmp.push_back( bots_now[b] );
@@ -606,7 +621,7 @@ void load_trace_file( string file )
 			bots_add.clear();
 			bots_rem.clear();
 			sort( bots_now.begin(), bots_now.end(),
-				[](const Bot & a, const Bot & b) -> bool { return a.id < b.id; } );
+				[](const ZBot & a, const ZBot & b) -> bool { return a.id < b.id; } );
 			trace_cmd.push_back( vec );
 			vec.clear();
 		}
@@ -622,7 +637,7 @@ void go_to_command( int i )
 		ss.reset();
 		cur_cmd = 0;
 	}
-	
+
 	while (cur_cmd < i)
 	{
 		for (int i=0; i<(int)trace_cmd[cur_cmd].size(); i++)
@@ -640,95 +655,117 @@ void nano_display_code()
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 
-	static bool need_refresh = true;
-	if (ImGui::BeginCombo("Model", cur_model.c_str(), 0)) // The second parameter is the label previewed before opening the combo.
-	{
-		if (need_refresh)
-		{
-			refresh_list_of_model_files();
-			need_refresh = false;
+	if (manual_model) {
+		if (!manual_model_loaded) {
+			trace_mode = false;
+			ss.reset();
+			cur_cmd = 0;
+			load_model_file( cur_model );
+			manual_model_loaded = true;
 		}
-		for (int a = 0; a < (int)model_files.size(); a++)
+	} else {
+		static bool need_refresh = true;
+		if (ImGui::BeginCombo("Model", cur_model.c_str(), 0)) // The second parameter is the label previewed before opening the combo.
 		{
-			bool is_selected = (cur_model == model_files[a]);
-			if (ImGui::Selectable(model_files[a].c_str(), is_selected))
+			if (need_refresh)
 			{
-				trace_mode = false;
-				ss.reset();
-				cur_cmd = 0;
-				cur_model = model_files[a];
-				load_model_file( cur_model );
-				need_refresh = true;
+				refresh_list_of_model_files();
+				need_refresh = false;
 			}
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();   // Set the initial focus when opening the combo (scrolling + for keyboard navigation support in the upcoming navigation branch)
+			for (int a = 0; a < (int)model_files.size(); a++)
+			{
+				bool is_selected = (cur_model == model_files[a]);
+				if (ImGui::Selectable(model_files[a].c_str(), is_selected))
+				{
+					trace_mode = false;
+					ss.reset();
+					cur_cmd = 0;
+					cur_model = model_files[a];
+					load_model_file( cur_model );
+					need_refresh = true;
+				}
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();   // Set the initial focus when opening the combo (scrolling + for keyboard navigation support in the upcoming navigation branch)
+			}
+			ImGui::EndCombo();
 		}
-		ImGui::EndCombo();
+		ImGui::SameLine();
+		if (ImGui::Button( "Prev" ))
+		{
+			for (size_t a = 0; a < model_files.size(); a++)
+			{
+				const bool is_selected = (cur_model == model_files[a]);
+				if (is_selected)
+				{
+					a = (a == 0 ? model_files.size()-1 : a-1);
+					trace_mode = false;
+					ss.reset();
+					cur_cmd = 0;
+					cur_model = model_files[a];
+					load_model_file( cur_model );
+					need_refresh = true;
+				}
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button( "Next" ))
+		{
+			for (size_t a = 0; a < model_files.size(); a++)
+			{
+				const bool is_selected = (cur_model == model_files[a]);
+				if (is_selected)
+				{
+					a = (a == model_files.size()-1 ? 0 : a+1);
+					trace_mode = false;
+					ss.reset();
+					cur_cmd = 0;
+					cur_model = model_files[a];
+					load_model_file( cur_model );
+					need_refresh = true;
+				}
+			}
+		}
 	}
-	ImGui::SameLine();
-	if (ImGui::Button( "Prev" ))
-	{
-		for (size_t a = 0; a < model_files.size(); a++)
-		{
-			const bool is_selected = (cur_model == model_files[a]);
-			if (is_selected)
-			{
-                a = (a == 0 ? model_files.size()-1 : a-1);
-				trace_mode = false;
-				ss.reset();
-				cur_cmd = 0;
-				cur_model = model_files[a];
-				load_model_file( cur_model );
-				need_refresh = true;
-			}
-		}
-    }
-	ImGui::SameLine();
-	if (ImGui::Button( "Next" ))
-	{
-		for (size_t a = 0; a < model_files.size(); a++)
-		{
-			const bool is_selected = (cur_model == model_files[a]);
-			if (is_selected)
-			{
-                a = (a == model_files.size()-1 ? 0 : a+1);
-				trace_mode = false;
-				ss.reset();
-				cur_cmd = 0;
-				cur_model = model_files[a];
-				load_model_file( cur_model );
-				need_refresh = true;
-			}
-		}
-    }
 
 	ImGui::Text( "Resolution: %d  Filled: %d\n", vm.R, vm.filled );
 
-	if (ImGui::BeginCombo("Solver", cur_trace.c_str(), 0))
-	{
-		for (int a = 0; a < (int)trace_files.size(); a ++)
-		{
-			bool is_selected = (cur_trace == trace_files[a].first);
-			if (ImGui::Selectable(trace_files[a].first.c_str(), is_selected))
-			{
-				trace_mode = false;
-				ss.reset();
-				cur_cmd = 0;
-				cur_trace = trace_files[a].first;
-				load_trace_file( trace_files[a].second );
-			}
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();   // Set the initial focus when opening the combo (scrolling + for keyboard navigation support in the upcoming navigation branch)
+	if (manual_trace) {
+		if (!manual_trace_loaded) {
+			trace_mode = true;
+			ss.reset();
+			cur_cmd = 0;
+			trace_speed = 0;
+			load_trace_file( cur_trace );
+			manual_trace_loaded = true;
 		}
-		ImGui::EndCombo();
+	} else {
+		if (ImGui::BeginCombo("Solver", cur_trace.c_str(), 0))
+		{
+			for (int a = 0; a < (int)trace_files.size(); a ++)
+			{
+				bool is_selected = (cur_trace == trace_files[a].first);
+				if (ImGui::Selectable(trace_files[a].first.c_str(), is_selected))
+				{
+					trace_mode = false;
+					ss.reset();
+					cur_cmd = 0;
+					cur_trace = trace_files[a].first;
+					load_trace_file( trace_files[a].second );
+				}
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();   // Set the initial focus when opening the combo (scrolling + for keyboard navigation support in the upcoming navigation branch)
+			}
+			ImGui::EndCombo();
+		}
 	}
 
 	ImGui::Text( "Trace Commands [%d/%d]", cur_cmd, (int)trace_cmd.size() );
-	static bool show_bids = true, show_cmd = true, short_cmd = false, show_coord = true;
+	static bool show_bids = true, show_cmd = true, short_cmd = false, show_coord = true, cmd_num = false;
 	ImGui::Checkbox( "Bot ids", &show_bids ); ImGui::SameLine();
 	ImGui::Checkbox( "Show cmd", &show_cmd ); ImGui::SameLine();
 	ImGui::Checkbox( "Short cmd", &short_cmd ); ImGui::SameLine();
-	ImGui::Checkbox( "Coords", &show_coord );
+	ImGui::Checkbox( "Coords", &show_coord ); ImGui::SameLine();
+	ImGui::Checkbox( "Cmd number", &cmd_num );
 	{
 		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true, ImGuiWindowFlags_HorizontalScrollbar );
 		ImGuiListClipper clipper(trace_cmd.size());
@@ -753,9 +790,9 @@ void nano_display_code()
 					ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(hue, 0.6f, 0.6f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(hue, 0.7f, 0.7f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(hue, 0.8f, 0.8f));
-					ImGui::Button( trace_cmd[i][j].cmd_to_string( show_bids, !show_cmd, short_cmd, show_coord ).c_str() );
+					ImGui::Button( trace_cmd[i][j].cmd_to_string( show_bids, !show_cmd, short_cmd, show_coord, cmd_num ).c_str() );
 					if (ImGui::IsItemHovered())
-						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true ).c_str() );
+						ImGui::SetTooltip( trace_cmd[i][j].cmd_to_string( true, false, false, true, true ).c_str() );
 					ImGui::PopStyleColor(3);
 				}
 				ImGui::PopStyleColor(2);
@@ -819,6 +856,8 @@ void nano_display_code()
 			cur_cmd = 0;
 			trace_speed = 0;
 		}
+		ImGui::SameLine();
+		ImGui::Checkbox( "Deconstruction", &ss.deconstruct );
 	}
 
 	int n_bots = 0;
@@ -960,6 +999,15 @@ void idle_func()
 int main(int argc, char * argv[])
 {
 	sol();
+
+	if (argc > 1) {
+		cur_model = argv[1];
+		manual_model = true;
+	}
+	if (argc > 2) {
+		cur_trace = argv[2];
+		manual_trace = true;
+	}
 
 	glutInit(&argc, argv);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);

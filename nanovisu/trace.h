@@ -8,15 +8,17 @@
 #include <iostream>
 #include "zlib.h"
 
+#include "../Solver/trace_writer.h"
+
 #ifdef __linux__
 #   define sprintf_s sprintf
 #endif
 
 using namespace std;
 
-template<class T> inline T Abs(const T &x) { return x >= 0 ? x : -x; }
+//template<class T> inline T Abs(const T &x) { return x >= 0 ? x : -x; }
 
-enum CommandType
+enum RipCommandType
 {
 	CT_HALT,
 	CT_WAIT,
@@ -31,77 +33,16 @@ enum CommandType
 	CT_UNDEFINED
 };
 
-inline int sign(int x)
-{
-	if (x < 0) return -1;
-	if (x == 0) return 0;
-	return 1;
-}
-
-struct Point
-{
-	int x, y, z;
-
-	Point to(const Point &other) const
-	{
-		return { other.x - x, other.y - y, other.z - z };
-	}
-
-	bool is_near(const Point &other) const
-	{
-		int a = Abs(x - other.x), b = Abs(y - other.y), c = Abs(z - other.z);
-		return a <= 1 && b <= 1 && c <= 1 && a + b + c <= 2;
-	}
-
-	Point dir_to(const Point &other) const
-	{
-		return { sign(other.x - x), sign(other.y - y), sign(other.z - z) };
-	}
-
-	bool operator != (const Point &other) const
-	{
-		return x != other.x || y != other.y || z != other.z;
-	}
-
-	bool operator == (const Point &other) const
-	{
-		return x == other.x && y == other.y && z == other.z;
-	}
-
-	Point operator + (const Point &other) const
-	{
-		return { x + other.x, y + other.y, z + other.z };
-	}
-
-	Point operator * (int k) const
-	{
-		return { x * k, y * k, z * k };
-	}
-
-	Point operator - (const Point &other) const
-	{
-		return { x - other.x, y - other.y, z - other.z };
-	}
-
-
-
-	int n_diff(const Point &other) const
-	{
-		return (x != other.x) + (y != other.y) + (z != other.z);
-	}
-
-	static const Point Origin;
-};
-
 extern const Point kDeltas6[6];
 
 struct TraceCommand
 {
-	CommandType tp = CT_UNDEFINED;
+	RipCommandType tp = CT_UNDEFINED;
 	Point p1 = { 0, 0, 0 }, p2 = { 0, 0, 0 };
 	int m = 0;
 
 	int bid = -1;
+	int num = 0;
 
 	string coord_to_string( Point p )
 	{
@@ -110,7 +51,7 @@ struct TraceCommand
 		return string(ch);
 	}
 
-	string cmd_to_string( bool sh_bid, bool no, bool shrt, bool coords)
+	string cmd_to_string( bool sh_bid, bool no, bool shrt, bool coords, bool num_f )
 	{
 		string re = "";
 		if (sh_bid)
@@ -153,6 +94,16 @@ struct TraceCommand
 #endif
 			else if (tp==CT_FILL) re += coord_to_string( p1 );
 			else if (tp==CT_VOID) re += coord_to_string( p1 );
+		}
+
+		if (num_f)
+		{
+			if (re!="") re += " ";
+#ifdef __linux__
+			re += std::to_string( num );
+#else
+			re += string(_itoa(num, str, 10));
+#endif
 		}
 
 		return re;

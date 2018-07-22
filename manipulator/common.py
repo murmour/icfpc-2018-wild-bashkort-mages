@@ -39,18 +39,19 @@ def filter_problems(lowIndex, highIndex):
     return ps
 
 
-trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z0-9_]+).meta$')
+trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+).meta$')
 
 def parse_trace_meta_fname(fname):
     m = re.match(trace_meta_name_rx, fname)
     if m is None:
         return None
-    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver')
-    return { 'fname': traces_dir + fname + '.nbt',
+    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots')
+    return { 'fname': traces_dir + fname + '.nbt.gz',
              'meta_fname': traces_dir + fname + '.meta',
              'prefix': m.group('prefix'),
              'id': int(m.group('id')),
-             'solver': m.group('solver') }
+             'solver': m.group('solver'),
+             'bots': m.group('bots')}
 
 
 def get_all_good_traces():
