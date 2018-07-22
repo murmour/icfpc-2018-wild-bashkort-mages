@@ -322,7 +322,6 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 	}
 
 	reverse( rev_cmd.begin(), rev_cmd.end() );
-	rev_cmd.push_back( trace_cmd[(int)trace_cmd.size()-1] );
 
 	ss.reset();
 
