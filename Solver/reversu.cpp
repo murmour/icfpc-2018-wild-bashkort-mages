@@ -324,13 +324,6 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 	reverse( rev_cmd.begin(), rev_cmd.end() );
 	rev_cmd.push_back( trace_cmd[(int)trace_cmd.size()-1] );
 
-	for (int i=0; i<(int)rev_cmd.size(); i++)
-	{
-		for (int j=0; j<(int)rev_cmd[i].size(); j++)
-			cout << rev_cmd[i][j].cmd_to_string( true, false, true, false, true ).c_str() << "; ";
-		cout << "\n";
-	}
-
 	ss.reset();
 
 	for (int i=0; i<(int)rev_cmd.size(); i++)
