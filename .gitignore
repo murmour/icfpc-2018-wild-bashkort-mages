@@ -24,3 +24,4 @@ manipulator/temp
 Solver/solver
 nanovisu/nanovisu
 nanovisu/imgui.ini
+*.ini
