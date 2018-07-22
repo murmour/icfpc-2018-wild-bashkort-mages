@@ -327,7 +327,7 @@ struct Bot
 // returns the end point
 Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
 
-typedef std::function<int(const Matrix *target, TraceWriter *writer)> TSolverFun;
+typedef std::function<int(const Matrix *src, const Matrix *target, TraceWriter *writer)> TSolverFun;
 
 inline int high_bit(i64 seeds)
 {

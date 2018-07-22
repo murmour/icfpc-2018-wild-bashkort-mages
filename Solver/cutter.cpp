@@ -250,8 +250,10 @@ struct CutterSolver
 	Bot *bots[kMaxBots];
 };
 
-int cutter_solver(const Matrix *target, TraceWriter *writer)
+int cutter_solver(const Matrix *src, const Matrix *target, TraceWriter *writer)
 {
+	if (src) exit(42);
+	Assert(target);
 	auto solver = new CutterSolver(target, writer);
 	int res = solver->solve();
 	delete solver;

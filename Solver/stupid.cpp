@@ -61,8 +61,10 @@ struct StupidSolver
 	Bot *b;
 };
 
-int stupid_solver(const Matrix *target, TraceWriter *writer)
+int stupid_solver(const Matrix *src, const Matrix *target, TraceWriter *writer)
 {
+	if (src) exit(42);
+	Assert(target);
 	auto solver = new StupidSolver();
 	int res = (*solver)(target, writer);
 	delete solver;
