@@ -326,6 +326,7 @@ struct Bot
 
 // returns the end point
 Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
+void reach_cell(Bot *b, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
 
 typedef std::function<int(const Matrix *src, const Matrix *target, TraceWriter *writer)> TSolverFun;
 
@@ -346,6 +347,18 @@ inline int low_bit(i64 seeds)
 inline i64 make_seeds(int a, int b)
 {
 	return ((1ll << (b + 1)) - 1) ^ ((1ll << a) - 1);
+}
+
+template<typename F>
+inline bool check_for_all_subdeltas(Point p, F f)
+{
+	if (p.x && !f({ p.x, 0, 0 })) return false;
+	if (p.y && !f({ 0, p.y, 0 })) return false;
+	if (p.z && !f({ 0, 0, p.z })) return false;
+	if (p.x && p.y & !f({ p.x, p.y, 0 })) return false;
+	if (p.x && p.z & !f({ p.x, 0, p.z })) return false;
+	if (p.y && p.z & !f({ 0, p.y, p.z })) return false;
+	return true;
 }
 
 // clears commands after collecting

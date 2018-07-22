@@ -3,18 +3,6 @@
 
 using namespace std;
 
-template<typename F>
-inline bool check_for_all_subdeltas(Point p, F f)
-{
-	if (p.x && !f({ p.x, 0, 0 })) return false;
-	if (p.y && !f({ 0, p.y, 0 })) return false;
-	if (p.z && !f({ 0, 0, p.z })) return false;
-	if (p.x && p.y & !f({ p.x, p.y, 0 })) return false;
-	if (p.x && p.z & !f({ p.x, 0, p.z })) return false;
-	if (p.y && p.z & !f({ 0, p.y, p.z })) return false;
-	return true;
-}
-
 struct CutterSolver
 {
 	CutterSolver(const Matrix *m, TraceWriter *w)
@@ -39,7 +27,7 @@ struct CutterSolver
 		while (!q.empty())
 		{
 			auto t = q.front(); q.pop();
-			b->pos = reach_cell(b->pos, t, &cur, w);
+			reach_cell(b, t, &cur, w);
 			w->fill(b->pos, t);
 			cur[t] = true;
 			for (auto d : Deltas26())
@@ -62,7 +50,7 @@ struct CutterSolver
 		// first, every active bot should get to its position
 		int k = (int)active.size();
 		for (int i = 0; i < k; i++)
-			active[i]->pos = reach_cell(active[i]->pos, starts[active[i]->left], &cur, &active[i]->mw, true);
+			reach_cell(active[i], starts[active[i]->left], &cur, &active[i]->mw, true);
 		collect_commands(w, active);
 		// now, fission
 		vector<Bot*> new_acitve;
@@ -125,7 +113,7 @@ struct CutterSolver
 					Point pos = bots[active[i]->parent]->pos;
 					f[b->parent] = true;
 					pos.x++;
-					b->pos = reach_cell(b->pos, pos, &cur, &b->mw, true);
+					reach_cell(b, pos, &cur, &b->mw, true);
 				}
 			}
 			collect_commands(w, active);
@@ -229,7 +217,7 @@ struct CutterSolver
 			
 			BFS(bots[seg], { x0, 0, z0 }, &bots[seg]->mw);
 
-			bots[seg]->pos = reach_cell(bots[seg]->pos, starts[seg], &cur, &bots[seg]->mw, true);
+			reach_cell(bots[seg], starts[seg], &cur, &bots[seg]->mw, true);
 		}
 		vector<Bot*> all_bots;
 		for (int i = 0; i < n; i++) all_bots.push_back(bots[i]);

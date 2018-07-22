@@ -565,6 +565,10 @@ static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w,
 	return from;
 }
 
+void reach_cell(Bot * b, Point to, const Matrix * env, TraceWriter * w, bool exact)
+{
+	b->pos = reach_cell(b->pos, to, env, w, exact);
+}
 
 Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
 {
