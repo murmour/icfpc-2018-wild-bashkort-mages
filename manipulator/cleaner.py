@@ -22,10 +22,10 @@ if __name__ == '__main__':
             meta = {}
             with io.open(t['meta_fname'], 'r') as f:
                 meta = json.loads(f.read())
-            if 'rubbish' in meta:
-                continue
-            meta['rubbish'] = True
-            with io.open(t['meta_fname'], 'w') as f:
-                f.write(json.dumps(meta))
-            os.remove(t['fname'])
-            print('%s was marked as rubbish and removed' % t['fname'])
+            if not 'rubbish' in meta:
+                meta['rubbish'] = True
+                with io.open(t['meta_fname'], 'w') as f:
+                    f.write(json.dumps(meta))
+            if os.path.isfile(t['fname']):
+                os.remove(t['fname'])
+                print('%s was marked as rubbish and removed' % t['fname'])
