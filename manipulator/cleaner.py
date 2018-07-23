@@ -7,6 +7,12 @@ import json
 
 if __name__ == '__main__':
     ts = common.get_all_traces()
+    for t in ts:
+        if not os.path.isfile(t['meta_fname']):
+            os.remove(t['fname'])
+            print('%s was removed' % t['fname'])
+
+    ts = common.get_all_traces()
     groups = {}
     for t in ts:
         key = t['prefix']+str(t['id'])+t['solver']+t['solver2']
@@ -19,9 +25,8 @@ if __name__ == '__main__':
         l.sort(key = lambda t: t['energy'])
         rubbish = l[2:]
         for t in rubbish:
-            if os.path.isfile(t['fname']):
-                os.remove(t['fname'])
-                print('%s was removed' % t['fname'])
+            os.remove(t['fname'])
+            print('%s was removed' % t['fname'])
             if os.path.isfile(t['meta_fname']):
                 os.remove(t['meta_fname'])
                 print('%s was removed' % t['meta_fname'])

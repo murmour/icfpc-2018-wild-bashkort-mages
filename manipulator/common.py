@@ -67,10 +67,12 @@ def get_all_good_traces():
     return ts
 
 
-trace_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).nbt.gz$')
+trace_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_'
+                           '(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)'
+                           '(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).nbt.gz$')
 
 def parse_trace_fname(fname):
-    m = re.match(trace_meta_name_rx, fname)
+    m = re.match(trace_name_rx, fname)
     if m is None:
         return None
     fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots') + m.group('solver2') + m.group('bots2')
