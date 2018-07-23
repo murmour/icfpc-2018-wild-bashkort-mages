@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 		FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, model);
 		reverse_trace(rev_out_file, tw);
 		tw->halt();
-		Assert(tw->get_filled_count() == 0);
+		//Assert(tw->get_filled_count() == 0);
 
 		printf("%lld", tw->get_energy());
 		delete tw;
