@@ -705,7 +705,6 @@ void MemoryTraceWriter::flip()
 void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
 {
 	auto d = from.to(to);
-	/*
 	if (!commands.empty())
 	{
 		auto &prev = commands.back();
@@ -721,7 +720,6 @@ void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_
 			}
 		}
 	}
-	*/
 	add({ i8(d.x), i8(d.y), i8(d.z), reverse_order ? cmdMoveR : cmdMove });
 }
 
