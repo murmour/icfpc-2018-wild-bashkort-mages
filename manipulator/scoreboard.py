@@ -18,12 +18,12 @@ if __name__ == '__main__':
     for p in ps:
         pts = [ t for t in ts if t['id'] == p['id'] and t['prefix'] == p['prefix']]
         if pts == []:
-            print('%s%s: no solution' % (p['prefix'], p['id']))
+            print('%s%d: no solution' % (p['prefix'], p['id']))
             continue
 
         pts.sort(key = lambda pt: pt['energy'])
         def print_pt(pt):
-            return '%s(%s)' % (pt['solver']+str(pt['bots']), format(pt['energy'], ',d'))
+            return '%s(%s)' % (pt['solver']+str(pt['bots'])+pt['solver2']+pt['bots2'], format(pt['energy'], ',d'))
         print('%s%s: %s' % (p['prefix'], p['id'], ', '.join(print_pt(pt) for pt in pts[:4])))
 
         best = pts[0]

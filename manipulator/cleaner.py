@@ -9,7 +9,7 @@ if __name__ == '__main__':
     ts = common.get_all_traces()
     groups = {}
     for t in ts:
-        key = t['prefix']+str(t['id'])+t['solver']
+        key = t['prefix']+str(t['id'])+t['solver']+t['solver2']
         if not key in groups:
             groups[key] = [t]
         else:
