@@ -67,7 +67,6 @@ struct CutterpillarzSolver
 			cells.erase(cells.begin());
 		};
 
-		temp_bfs.clear(R);
 		auto push = [&](Point p) {
 			if (temp_bfs[p]) return;
 			q.push(p);
@@ -246,6 +245,7 @@ struct CutterpillarzSolver
 		lims0.clear();
 		for (auto p : starts) lims0.push_back(p.z);
 		cur.clear(R);
+		temp_bfs.clear(R);
 
 		// ok, now fission...
 		memset(bots, 0, sizeof(bots));
@@ -254,6 +254,7 @@ struct CutterpillarzSolver
 		bots[0]->right = n - 1;
 		fission({ bots[0] }, 1);
 
+		vector<Point> pil_p;
 		for (int seg = 0; seg < n; seg++)
 		{
 			ZL = lims0[seg];
@@ -281,6 +282,7 @@ struct CutterpillarzSolver
 			}
 			Assert(x0 != -1);
 
+			pil_p.push_back({ x0, y0, z0 });
 			if (y0 > 0)
 			{
 				// build a pillar
@@ -295,6 +297,27 @@ struct CutterpillarzSolver
 			BFS(bots[seg], { x0, y0, z0 }, &bots[seg]->mw);
 			if (y0 > 0)
 			{
+				reach_cell(bots[seg], { x0, y0 - 1, z0 }, &cur, &bots[seg]->mw);
+			}
+			else
+				reach_cell(bots[seg], starts[seg], &cur, &bots[seg]->mw, true);
+		}
+		vector<Bot*> all_bots;
+		for (int i = 0; i < n; i++) all_bots.push_back(bots[i]);
+		collect_commands(w, all_bots);
+
+		// dismantle pillars
+		for (int seg = 0; seg < n; seg++)
+		{
+			int x0 = pil_p[seg].x;
+			int y0 = pil_p[seg].y;
+			int z0 = pil_p[seg].z;
+
+			if (y0 > 0)
+			{
+				ZL = lims0[seg];
+				ZR = lims[seg];
+				cur.set_z_limits(ZL, ZR);
 				// dismantle the pillar
 				for (int y = y0 - 1; y >= 0; y--)
 				{
@@ -303,12 +326,9 @@ struct CutterpillarzSolver
 					bots[seg]->mw.void_(bots[seg]->pos, t);
 					cur[t] = false;
 				}
+				reach_cell(bots[seg], starts[seg], &cur, &bots[seg]->mw, true);
 			}
-
-			reach_cell(bots[seg], starts[seg], &cur, &bots[seg]->mw, true);
 		}
-		vector<Bot*> all_bots;
-		for (int i = 0; i < n; i++) all_bots.push_back(bots[i]);
 		collect_commands(w, all_bots);
 		cur.set_z_limits(-1, -1);
 		fusion();

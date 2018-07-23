@@ -35,6 +35,8 @@ FileTraceWriter::FileTraceWriter(const char * fname, int R, Matrix *src) : R(R)
 	{
 		mat.clear(R);
 	}
+	inv.clear(R);
+	bots.push_back({ Point::Origin, make_seeds(1, kMaxBots - 1), 0 });
 }
 
 FileTraceWriter::~FileTraceWriter()
@@ -49,7 +51,12 @@ void FileTraceWriter::next()
 	n_moves++;
 	if (cur_bot == n_bots)
 	{
+		Assert(n_bots_next == (int)bots_next.size());
 		n_bots = n_bots_next;
+		bots.swap(bots_next);
+		if (bots.size() != bots_next.size())
+			sort(bots.begin(), bots.end());
+		bots_next.clear();
 		cur_bot = 0;
 		if (n_bots > 0)
 			energy += (high_harmonics ? 30 : 3) * R * R * R + 20 * n_bots;
@@ -59,21 +66,29 @@ void FileTraceWriter::next()
 				Assert(p.first.get_bots() == p.second);
 			gr_ops.clear();
 		}
+		for (auto p : inv_v)
+			inv[p] = 0;
+		inv_v.clear();
+		for (auto &b : bots)
+			inv[b.pos] = 2 * (b.id + 1);
 	}
 }
 
 void FileTraceWriter::halt()
 {
+	invalidate(curp());
 	u8 data = 255;
 	gzwrite(f, &data, 1);
 	Assert(!high_harmonics);
 	Assert(n_bots == 1);
+	Assert(bots[0].pos == Point::Origin);
 	n_bots_next--;
 	next();
 }
 
 void FileTraceWriter::wait()
 {
+	inv_and_copy();
 	u8 data = 254;
 	gzwrite(f, &data, 1);
 	next();
@@ -81,14 +96,16 @@ void FileTraceWriter::wait()
 
 void FileTraceWriter::flip()
 {
+	inv_and_copy();
 	u8 data = 253;
 	gzwrite(f, &data, 1);
 	high_harmonics = !high_harmonics;
 	next();
 }
 
-void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
+void FileTraceWriter::move(const Point & From, const Point & To, bool reverse_order)
 {
+	Assert(From == curp());
 	auto write_long = [&](int from, int to, int q)
 	{
 		Assert(from != to);
@@ -97,6 +114,16 @@ void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_or
 		gzwrite(f, &data, 2);
 		energy += 2 * abs(from - to);
 		n_long_moves++;
+
+		// validation
+		Point dir = From.dir_to(To);
+		Point t = From;
+		while (t != To)
+		{
+			invalidate(t);
+			t = t + dir;
+		}
+		invalidate(t);
 	};
 	auto write_short = [&](int from1, int to1, int q1, int from2, int to2, int q2)
 	{
@@ -112,21 +139,47 @@ void FileTraceWriter::move(const Point & from, const Point & to, bool reverse_or
 		gzwrite(f, &data, 2);
 		energy += 2 * (abs(from1 - to1) + 2 + abs(from2 - to2));
 		n_short_moves++;
+
+		// validation
+		Point t = From;
+		Point tot_dir = From.dir_to(To);
+		Point c1 = kDeltas6[(q1 - 1) * 2];
+		Point c2 = kDeltas6[(q1 - 1) * 2 + 1];
+		Point dir1;
+		if (tot_dir.n_diff(c1) < tot_dir.n_diff(c2))
+			dir1 = c1;
+		else
+			dir1 = c2;
+
+		while (t.n_diff(To) > 1)
+		{
+			invalidate(t);
+			t = t + dir1;
+		}
+		Point dir = t.dir_to(To);
+		while (t != To)
+		{
+			invalidate(t);
+			t = t + dir;
+		}
+		invalidate(t);
 	};
-	if (from.x == to.x && from.y == to.y)
-		write_long(from.z, to.z, 3);
-	else if (from.x == to.x && from.z == to.z)
-		write_long(from.y, to.y, 2);
-	else if (from.y == to.y && from.z == to.z)
-		write_long(from.x, to.x, 1);
-	else if (from.x == to.x)
-		write_short(from.y, to.y, 2, from.z, to.z, 3);
-	else if (from.y == to.y)
-		write_short(from.x, to.x, 1, from.z, to.z, 3);
-	else if (from.z == to.z)
-		write_short(from.x, to.x, 1, from.y, to.y, 2);
+	if (From.x == To.x && From.y == To.y)
+		write_long(From.z, To.z, 3);
+	else if (From.x == To.x && From.z == To.z)
+		write_long(From.y, To.y, 2);
+	else if (From.y == To.y && From.z == To.z)
+		write_long(From.x, To.x, 1);
+	else if (From.x == To.x)
+		write_short(From.y, To.y, 2, From.z, To.z, 3);
+	else if (From.y == To.y)
+		write_short(From.x, To.x, 1, From.z, To.z, 3);
+	else if (From.z == To.z)
+		write_short(From.x, To.x, 1, From.y, To.y, 2);
 	else
 		Assert(false);
+	bots_next.push_back(bots[cur_bot]);
+	bots_next.back().pos = To;
 	next();
 }
 
@@ -139,6 +192,20 @@ inline int get_nd(const Point &from, const Point &to)
 
 void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 {
+	invalidate(curp());
+	Assert(from == curp());
+	int other = -1;
+	for (int i = 0; i < (int)bots.size(); i++)
+		if (bots[i].pos == to)
+		{
+			other = i;
+			break;
+		}
+	Assert(other != -1);
+	bots_next.push_back(bots[cur_bot]);
+	bots_next.back().seeds |= bots[other].seeds;
+	bots_next.back().seeds |= 1ll << bots[other].id;
+
 	u8 data = (get_nd(from, to) << 3) + 7;
 	gzwrite(f, &data, 1);
 	n_bots_next--;
@@ -149,6 +216,9 @@ void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 
 void FileTraceWriter::fusion_s(const Point & from, const Point & to)
 {
+	invalidate(curp());
+	Assert(from == curp());
+
 	u8 data = (get_nd(from, to) << 3) + 6;
 	gzwrite(f, &data, 1);
 	next();
@@ -156,6 +226,8 @@ void FileTraceWriter::fusion_s(const Point & from, const Point & to)
 
 void FileTraceWriter::fill(const Point & from, const Point & to)
 {
+	inv_and_copy();
+	Assert(from == curp());
 	u8 data = (get_nd(from, to) << 3) + 3;
 	gzwrite(f, &data, 1);
 	if (!mat[to])
@@ -173,6 +245,13 @@ void FileTraceWriter::fill(const Point & from, const Point & to)
 
 void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 {
+	inv_and_copy();
+	Assert(from == curp());
+	int low = low_bit(bots[cur_bot].seeds); // todo: fixme
+	int high = high_bit(bots[cur_bot].seeds);
+	bots_next.back().seeds = make_seeds(low + m + 1, high);
+	bots_next.push_back({ to, make_seeds(low + 1, low + m), low });
+
 	u8 data = (get_nd(from, to) << 3) + 5;
 	gzwrite(f, &data, 1);
 	Assert(m >= 0 && m <= 20);
@@ -185,6 +264,8 @@ void FileTraceWriter::fission(const Point & from, const Point & to, int m)
 
 void FileTraceWriter::void_(const Point &from, const Point &to)
 {
+	inv_and_copy();
+	Assert(from == curp());
 	u8 data = (get_nd(from, to) << 3) + 2;
 	gzwrite(f, &data, 1);
 	if (mat[to])
@@ -202,6 +283,8 @@ void FileTraceWriter::void_(const Point &from, const Point &to)
 
 void FileTraceWriter::g_fill(const Point &from, const Point &to, const Point & fd)
 {
+	inv_and_copy();
+	Assert(from == curp());
 	u8 data[4];
 	data[0] = (get_nd(from, to) << 3) + 1;
 	Assert(fd.is_fd());
@@ -235,6 +318,8 @@ void FileTraceWriter::g_fill(const Point &from, const Point &to, const Point & f
 
 void FileTraceWriter::g_void(const Point &from, const Point &to, const Point & fd)
 {
+	inv_and_copy();
+	Assert(from == curp());
 	u8 data[4];
 	data[0] = (get_nd(from, to) << 3) + 0;
 	Assert(fd.is_fd());
@@ -264,6 +349,95 @@ void FileTraceWriter::g_void(const Point &from, const Point &to, const Point & f
 		gr_ops[r]++;
 	}
 	next();
+}
+
+bool FileTraceWriter::can_execute(const Command &cmd)
+{
+	Assert(cmd.ty == cmdMove || cmd.ty == cmdMoveR);
+	bool res = true;
+	bool reverse_order = cmd.ty == cmdMoveR;
+	Point From = curp();
+	Point To = From + Point({ cmd.dx, cmd.dy, cmd.dz });
+
+	auto test_long = [&](int from, int to, int q)
+	{
+		Assert(from != to);
+		Assert(abs(from - to) <= 15);
+		// validation
+		Point dir = From.dir_to(To);
+		Point t = From;
+		while (t != To)
+		{
+			if (inv[t] && t != From) {
+				res = false; 
+				return;
+			}
+			t = t + dir;
+		}
+		if (inv[t] && t != From) res = false;
+	};
+
+	auto test_short = [&](int from1, int to1, int q1, int from2, int to2, int q2)
+	{
+		Assert(abs(from1 - to1) <= 5);
+		Assert(abs(from2 - to2) <= 5);
+		if (reverse_order)
+		{
+			swap(from1, from2);
+			swap(to1, to2);
+			swap(q1, q2);
+		}
+
+		// validation
+		Point t = From;
+		Point tot_dir = From.dir_to(To);
+		Point c1 = kDeltas6[(q1 - 1) * 2];
+		Point c2 = kDeltas6[(q1 - 1) * 2 + 1];
+		Point dir1;
+		if (tot_dir.n_diff(c1) < tot_dir.n_diff(c2))
+			dir1 = c1;
+		else
+			dir1 = c2;
+
+		while (t.n_diff(To) > 1)
+		{
+			if (inv[t] && t != From) {
+				res = false;
+				return;
+			}
+			t = t + dir1;
+		}
+		Point dir = t.dir_to(To);
+		while (t != To)
+		{
+			if (inv[t] && t != From) {
+				res = false;
+				return;
+			}
+			t = t + dir;
+		}
+		if (inv[t] && t != From) {
+			res = false;
+			return;
+		}
+	};
+
+	if (From.x == To.x && From.y == To.y)
+		test_long(From.z, To.z, 3);
+	else if (From.x == To.x && From.z == To.z)
+		test_long(From.y, To.y, 2);
+	else if (From.y == To.y && From.z == To.z)
+		test_long(From.x, To.x, 1);
+	else if (From.x == To.x)
+		test_short(From.y, To.y, 2, From.z, To.z, 3);
+	else if (From.y == To.y)
+		test_short(From.x, To.x, 1, From.z, To.z, 3);
+	else if (From.z == To.z)
+		test_short(From.x, To.x, 1, From.y, To.y, 2);
+	else
+		Assert(false);
+
+	return res;
 }
 
 Point FileTraceWriter::do_command(const Point &p, Command cmd, int bot_id)
@@ -390,6 +564,31 @@ void Matrix::init_sums()
 			}
 }
 
+void Matrix::dump(const char * fname, const vector<Point>& bots) const
+{
+	FILE *f = fopen(fname, "wb");
+	if (!f) return;
+
+	u8 xr = u8(R);
+	fwrite(&xr, 1, 1, f);
+	int i = 0, j = 0, k = 0;
+	for (int a = 0; a<((R*R*R + 7) / 8); a++)
+	{
+		u8 z = 0;
+		for (int b = 0; b<8; b++)
+		{
+			if (m[i][j][k])
+				z += 1 << b;
+			k++;
+			if (k == R) { k = 0; j++; }
+			if (j == R) { j = 0; i++; }
+			if (i == R) break;
+		}
+		fwrite(&z, 1, 1, f);
+	}
+	fclose(f);
+}
+
 map<string, TSolverFun> *solvers = nullptr;
 
 const vector<Point>& Deltas26()
@@ -405,6 +604,52 @@ const vector<Point>& Deltas26()
 							deltas.push_back({ x, y, z });
 	}
 	return deltas;
+}
+
+bool collect_commands_sync(TraceWriter *w, const std::vector<Bot*> &bots_)
+{
+	auto bots = bots_;
+	sort(bots.begin(), bots.end(), [&](Bot *a, Bot *b) -> bool { return a->id < b->id; });
+	int k = (int)bots.size();
+	vector<int> p(k);
+	vector<int> sz;
+	for (auto b : bots) sz.push_back((int)b->mw.commands.size());
+	while (true)
+	{
+		bool incomplete = false;
+		bool advanced = false;
+		for (int i = 0; i < k; i++)
+		{
+			if (p[i] >= sz[i])
+			{
+				w->wait();
+				continue;
+			}
+			incomplete = true;
+			auto &cmd = bots[i]->mw.commands[p[i]];
+			if (w->can_execute(cmd))
+			{
+				advanced = true;
+				bots[i]->mw.p0 = w->do_command(bots[i]->mw.p0, cmd, i);
+				p[i]++;
+			}
+			else
+			{
+				w->wait();
+			}
+		}
+		if (!incomplete) break;
+		if (!advanced)
+		{
+			for (auto b : bots) {
+				b->mw.commands.clear();
+				b->pos = b->mw.p0;
+			}
+			return false;
+		}
+	}
+	for (auto b : bots) b->mw.commands.clear();
+	return true;
 }
 
 void collect_commands(TraceWriter * w, const std::vector<Bot*> &bots_)
@@ -460,6 +705,7 @@ void MemoryTraceWriter::flip()
 void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_order)
 {
 	auto d = from.to(to);
+	/*
 	if (!commands.empty())
 	{
 		auto &prev = commands.back();
@@ -475,6 +721,7 @@ void MemoryTraceWriter::move(const Point & from, const Point & to, bool reverse_
 			}
 		}
 	}
+	*/
 	add({ i8(d.x), i8(d.y), i8(d.z), reverse_order ? cmdMoveR : cmdMove });
 }
 
@@ -552,7 +799,7 @@ Point MemoryTraceWriter::do_command(const Point &p, Command cmd, int bot_id)
 	return p;
 }
 
-static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
+static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact, const Matrix *bad)
 {
 	Point P = from;
 
@@ -582,6 +829,7 @@ static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w,
 
 	auto check = [&](Point t)
 	{
+		if (bad && (*bad)[t]) return false;
 		return exact ? t == to : t.is_near(to);
 	};
 
@@ -645,16 +893,19 @@ static Point bfs_reach(Point from, Point to, const Matrix * env, TraceWriter *w,
 				push(p, i + 1);
 		}
 	}
+#ifdef DEBUG
+	env->dump("dump.mdl", { from, to });
+#endif
 	Assert(false);
 	return from;
 }
 
-void reach_cell(Bot * b, Point to, const Matrix * env, TraceWriter * w, bool exact)
+void reach_cell(Bot * b, Point to, const Matrix * env, TraceWriter * w, bool exact, const Matrix *bad)
 {
-	b->pos = reach_cell(b->pos, to, env, w, exact);
+	b->pos = reach_cell(b->pos, to, env, w, exact, bad);
 }
 
-Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact)
+Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool exact, const Matrix *bad)
 {
 	Point P = from;
 	int old_moves = w->get_n_moves();
@@ -672,6 +923,7 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		{
 			Point a = from + d;
 			if (!env->is_valid(a)) continue;
+			if (bad && bad->get(a)) continue;
 			if (!env->get(a))
 			{
 				moveto(a);
@@ -681,8 +933,14 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 		Assert(false);
 	}
 
+	auto check = [&](Point t)
+	{
+		if (bad && (*bad)[t]) return false;
+		return exact ? t == to : t.is_near(to);
+	};
+
 	auto dir = from.dir_to(to);
-	while (exact ? P != to : !P.is_near(to))
+	while (!check(P))
 	{
 		// try x
 		Point a = P;
@@ -738,8 +996,8 @@ Point reach_cell(Point from, Point to, const Matrix * env, TraceWriter *w, bool 
 			continue;
 		}
 		if (w->backtrack(old_moves))
-			return bfs_reach(from, to, env, w, exact);
-		return bfs_reach(P, to, env, w, exact);
+			return bfs_reach(from, to, env, w, exact, bad);
+		return bfs_reach(P, to, env, w, exact, bad);
 	}
 	return P;
 }

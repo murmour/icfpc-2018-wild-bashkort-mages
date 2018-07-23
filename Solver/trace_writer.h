@@ -177,6 +177,7 @@ struct Matrix
 	void clear(int r);
 
 	void init_sums();
+	void dump(const char * fname, const std::vector<Point> &bots) const;
 
 	char& operator [] (const Point &p)
 	{
@@ -327,6 +328,7 @@ struct TraceWriter
 	virtual void fill(const Point &from, const Point &to) = 0;
 	virtual void fission(const Point &from, const Point &to, int m) = 0;
 	virtual Point do_command(const Point &p, Command cmd, int bot_id) = 0;
+	virtual bool can_execute(const Command &cmd) = 0;
 
 	virtual void void_(const Point &from, const Point &to) = 0;
 	virtual void g_fill(const Point &from, const Point &to, const Point &fd) = 0;
@@ -334,6 +336,8 @@ struct TraceWriter
 
 	virtual int get_n_moves() const = 0;
 	virtual bool backtrack(int old_moves_count) = 0;
+	virtual int get_filled_count() const = 0;
+	virtual bool is_filled(const Point &p) = 0;
 
 	virtual ~TraceWriter() {}
 };
@@ -356,6 +360,22 @@ struct MemoryTraceWriter : public TraceWriter
 	void void_(const Point &from, const Point &to);
 	void g_fill(const Point &from, const Point &to, const Point &fd);
 	void g_void(const Point &from, const Point &to, const Point &fd);
+	int get_filled_count() const
+	{
+		Assert(false);
+		return 0;
+	}
+	bool can_execute(const Command &cmd)
+	{
+		Assert(false);
+		return false;
+	}
+
+	bool is_filled(const Point &p)
+	{
+		Assert(false);
+		return false;
+	}
 
 	int get_n_moves() const
 	{
@@ -390,7 +410,13 @@ struct FileTraceWriter : public TraceWriter
 	void g_fill(const Point &from, const Point &to, const Point &fd);
 	void g_void(const Point &from, const Point &to, const Point &fd);
 
+	bool is_filled(const Point &p)
+	{
+		return mat[p];
+	}
+
 	Point do_command(const Point &p, Command cmd, int bot_id);
+	bool can_execute(const Command &cmd);
 	i64 get_energy() const { return energy; }
 	int get_filled_count() const { return n_filled; }
 	const Matrix& get_matrix() const { return mat; }
@@ -406,6 +432,22 @@ struct FileTraceWriter : public TraceWriter
 	}
 private:
 	void next();
+	void invalidate(const Point &p)
+	{
+		Assert(!mat[p]);
+		Assert(!(inv[p] & 1));
+		inv[p] = 1;
+		inv_v.push_back(p);
+	}
+	Point curp() const
+	{
+		return bots[cur_bot].pos;
+	}
+	void inv_and_copy()
+	{
+		invalidate(curp());
+		bots_next.push_back(bots[cur_bot]);
+	}
 
 	gzFile f;
 	bool high_harmonics = false;
@@ -416,10 +458,25 @@ private:
 	int n_filled = 0;
 	int R; // resolution
 	Matrix mat;
+	Matrix inv; // invalid cells
+	std::vector<Point> inv_v;
 	std::map<Region, int> gr_ops; // how many ops were for this region
 	int n_long_moves = 0;
 	int n_short_moves = 0;
 	int n_moves = 0;
+
+	struct XBot
+	{
+		Point pos;
+		i64 seeds;
+		int id;
+		bool operator < (const XBot &other) const
+		{
+			return id < other.id;
+		}
+	};
+
+	std::vector<XBot> bots, bots_next;
 };
 
 struct Bot
@@ -450,8 +507,8 @@ struct Bot
 };
 
 // returns the end point
-Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
-void reach_cell(Bot *b, Point to, const Matrix *env, TraceWriter *w, bool exact = false);
+Point reach_cell(Point from, Point to, const Matrix *env, TraceWriter *w, bool exact = false, const Matrix *bad = nullptr);
+void reach_cell(Bot *b, Point to, const Matrix *env, TraceWriter *w, bool exact = false, const Matrix *bad = nullptr);
 
 typedef std::function<int(const Matrix *src, const Matrix *target, TraceWriter *writer)> TSolverFun;
 
@@ -500,6 +557,7 @@ inline bool need_reverse(int dir1, int dir2)
 
 // clears commands after collecting
 void collect_commands(TraceWriter *w, const std::vector<Bot*> &bots);
+bool collect_commands_sync(TraceWriter *w, const std::vector<Bot*> &bots);
 
 void RegisterSolver(const std::string id, TSolverFun f);
 TSolverFun GetSolver(const std::string id);
