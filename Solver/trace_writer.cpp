@@ -29,6 +29,7 @@ FileTraceWriter::FileTraceWriter(const char * fname, int R, Matrix *src) : R(R)
 		for (int i = 0; i < R; i++)
 			for (int j = 0; j < R; j++)
 				memcpy(mat.m[i][j], src->m[i][j], R);
+		n_filled = src->get_filled_count();
 	}
 	else
 	{

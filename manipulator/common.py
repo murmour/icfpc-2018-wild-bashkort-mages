@@ -31,10 +31,10 @@ def get_all_problems():
     return ps
 
 
-def filter_problems(lowIndex, highIndex):
+def filter_problems(lowIndex, highIndex, kinds):
     ps = get_all_problems()
     def is_requested(p):
-        return ((p['id'] >= lowIndex) and (p['id'] <= highIndex))
+        return ((p['id'] >= lowIndex) and (p['id'] <= highIndex) and (p['prefix'][1] in kinds))
     ps = [ p for p in ps if is_requested(p) ]
     return ps
 
@@ -51,7 +51,7 @@ def parse_trace_meta_fname(fname):
              'prefix': m.group('prefix'),
              'id': int(m.group('id')),
              'solver': m.group('solver'),
-             'bots': m.group('bots')}
+             'bots': int(m.group('bots'))}
 
 
 def get_all_good_traces():
