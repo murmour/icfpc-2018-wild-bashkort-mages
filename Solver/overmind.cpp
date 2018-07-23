@@ -88,58 +88,247 @@ struct OvermindSolver
 
 	void fill_block(Point p, vector<Bot*> bots, int s)
 	{
+		Assert(w->get_filled_count() % (s * s * s) == 0);
 		Assert(bots.size() == 8);
 		auto corners = get_corners(p, s);
 		for (auto p : corners)
 			Assert(cur.is_valid(p));
-		// assign bots to corners
-		vector<vector<int>> weights(8, vector<int>(8));
-		for (int i = 0; i < 8; i++)
-			for (int j = 0; j < 8; j++)
-				weights[i][j] = bots[i]->pos.to(corners[j]).mlen();
-		auto ass = get_optimal_assignment(weights);
+		Region r = get_region(p, s);
+
+		int bad_corner = -1;
+		int n_attempts = 0;
 		vector<Point> targets;
-		for (int i = 0; i < 8; i++)
-			targets.push_back(corners[ass[i]]);
+		while (true)
+		{
+			n_attempts++;
+			if (n_attempts > 5)
+				Assert(false);
+			// assign bots to corners
+			vector<vector<int>> weights(8, vector<int>(8));
+			for (int i = 0; i < 8; i++)
+				for (int j = 0; j < 8; j++)
+					weights[i][j] = Sqr(bots[i]->pos.to(corners[j]).mlen());
+
+			auto ass = get_optimal_assignment(weights);
+			targets.clear();
+			for (int i = 0; i < 8; i++)
+				targets.push_back(corners[ass[i]]);
+
+			// bots go to their respective starting positions
+			r.for_each([&](Point t) {
+				bad[t] = true;
+			});
+			bad_corner = -1;
+			//vector<Point> imm;
+			//bool is_imm[8] = { 0 };
+
+			for (int i = 0; i < 8; i++)
+			{
+				// checking for a bad corner:
+				bool ok = false;
+				for (auto d : kDeltas6)
+				{
+					auto t = targets[i] + d;
+					if (!cur.is_valid(t)) continue;
+					if (!bad[t] && !cur[t]) ok = true;
+				}
+				if (!ok)
+				{
+					Assert(bad_corner == -1);
+					bad_corner = i;
+				}
+				else
+				{
+					if (n_attempts > 3)
+					{
+						for (int j = 0; j < 8; j++) if (i != j) cur[bots[j]->pos] = true;
+						reach_cell(bots[i], targets[i], &cur, &bots[i]->mw, false, &bad);
+						collect_commands(w, bots);
+						for (int j = 0; j < 8; j++) if (i != j) cur[bots[j]->pos] = false;
+					}
+					else
+					{
+						reach_cell(bots[i], targets[i], &cur, &bots[i]->mw, false, &bad);
+					}
+				}
+			}
+
+			/*
+			for (int i = 0; i < 8; i++)
+			{
+				if (i == bad_corner) continue;
+				if (!is_imm[i])
+					reach_cell(bots[i], targets[i], &cur, &bots[i]->mw, false, &bad);
+			}
+
+			for (int i = 0; i < 8; i++) if (is_imm[i])
+			{
+				cur[bots[i]->pos] = false;
+			}
+			*/
+
+			r.for_each([&](Point t) {
+				bad[t] = false;
+			});
+			if (bad_corner != -1)
+			{
+				reach_cell(bots[bad_corner], targets[bad_corner], &cur, &bots[bad_corner]->mw, true);
+			}
+			if (collect_commands_sync(w, bots)) break;
+		}
+
+		Point dir1;
+		Point A, B2;
+		Region rd(Point::Origin, Point::Origin);
+		bool was_b2;
+		int oc = -1;
+		if (bad_corner != -1)
+		{
+			Point bc = targets[bad_corner];
+			int dir1i = -1;
+			for (int i = 0; i < 6; i++)
+			{
+				Point pt = bc + kDeltas6[i];
+				if (cur.is_valid(pt) && !cur[pt])
+				{
+					dir1i = i;
+					break;
+				}
+			}
+			Assert(dir1i != -1);
+			dir1 = kDeltas6[dir1i];
+			// dir1 is a "good" direction
+			oc = -1; // other corner
+			for (int i = 0; i < 8; i++)
+				if (targets[i] == bc + dir1 * (s - 1))
+				{
+					oc = i;
+					break;
+				}
+			Assert(oc != -1);
+
+			// dir2 is perpendicular to dir1 and contains a wall
+			int dir2i = -1;
+			for (int i = 0; i < 6; i++)
+			{
+				if ((dir1 + kDeltas6[i]).nz_count() != 2) continue;
+				Point pt = bc + kDeltas6[i];
+				if (cur.is_valid(pt) && cur[pt])
+				{
+					dir2i = i;
+					break;
+				}
+			}
+			Assert(dir2i != -1);
+			auto dir2 = kDeltas6[dir2i];
+
+			A = bc + dir2;
+			Point B = targets[oc] + dir2;
+			B2 = B + dir1;
+			Assert(cur.is_valid(B2));
+			if (!bots[oc]->pos.is_near(B2))
+			{
+				reach_cell(bots[oc], B2, &cur, &bots[oc]->mw, false);
+				//Assert(bots[oc]->pos.is_near(targets[oc]));
+				collect_commands(w, bots);
+			}
+			// remove the column
+			bots[bad_corner]->mw.g_void(bots[bad_corner]->pos, A, B2 - A);
+			bots[oc]->mw.g_void(bots[oc]->pos, B2, A - B2);
+			collect_commands(w, bots);
+
+			if (!bots[oc]->pos.is_near(targets[oc]))
+			{
+				reach_cell(bots[oc], targets[oc], &cur, &bots[oc]->mw, false);
+				collect_commands(w, bots);
+			}
+
+			was_b2 = cur[B2];
+			rd = Region(A, B2);
+			rd.for_each([&](Point t) {
+				cur[t] = false;
+			});
+
+			reach_cell(bots[bad_corner], A, &cur, &bots[bad_corner]->mw, true);
+
+			Point exit_cell = targets[oc] + dir1;
+			r.for_each([&](Point t) {
+				bad[t] = true;
+			});
+			bad[exit_cell] = true;
+			bad[B2] = true;
+			bad[B] = true;
+			bad[B - dir1] = true;
+			reach_cell(bots[oc], targets[oc], &cur, &bots[oc]->mw, false, &bad);
+			r.for_each([&](Point t) {
+				bad[t] = false;
+			});
+			bad[exit_cell] = false;
+			bad[B2] = false;
+			bad[B] = false;
+			bad[B - dir1] = false;
+
+			collect_commands(w, bots);
+		}
 
 		// mark future block cells as walls
-		Region r = get_region(p, s);
 		for (auto b : bots)
 			Assert(!r.contains(b->pos));
 		r.for_each([&](Point t) {
 			cur[t] = true;
 		});
 
-		// bots go to their respective starting positions
-		for (int i = 0; i < 8; i++)
-			reach_cell(bots[i], targets[i], &cur, &bots[i]->mw);
-
-		collect_commands(w, bots); // todo: waiting!
-
 		// generate the block
 		for (int i = 0; i < 8; i++)
 			bots[i]->mw.g_fill(bots[i]->pos, targets[i], r.opposite(targets[i]) - targets[i]);
 
 		collect_commands(w, bots);
+
+		if (bad_corner != -1)
+		{
+			for (int i = 0; i < 8; i++) if (i != bad_corner)
+				Assert(!rd.contains(bots[i]->pos));
+			// bad corner bot rebuilds the column
+			Assert(bots[bad_corner]->pos == A);
+			auto t = A;
+			for (int i = 0; i < s; i++)
+			{
+				reach_cell(bots[bad_corner], t + dir1, &cur, &bots[bad_corner]->mw, true);
+				bots[bad_corner]->mw.fill(t + dir1, t);
+				cur[t] = true;
+				t = t + dir1;
+			}
+			Assert(bots[bad_corner]->pos == B2);
+			if (was_b2)
+			{
+				reach_cell(bots[bad_corner], B2, &cur, &bots[bad_corner]->mw, false);
+				bots[bad_corner]->mw.fill(bots[bad_corner]->pos, B2);
+				cur[B2] = true;
+				Assert(bots[bad_corner]->pos != bots[oc]->pos);
+			}
+			collect_commands(w, bots);
+		}
+		Assert(w->get_filled_count() % (s * s * s) == 0);
 	}
 
 	void move_bots(vector<Bot*> bots, vector<Point> tgts)
 	{
 		Assert(bots.size() == tgts.size());
 		int n = (int)bots.size();
-		vector<vector<int>> weights(n, vector<int>(n));
-		for (int i = 0; i < n; i++)
-			for (int j = 0; j < n; j++)
-				weights[i][j] = bots[i]->pos.to(tgts[j]).mlen();
-		auto ass = get_optimal_assignment(weights);
-		vector<Point> targets;
-		for (int i = 0; i < n; i++)
-			targets.push_back(tgts[ass[i]]);
 
 		for (int i = 0; i < n; i++)
-			reach_cell(bots[i], targets[i], &cur, &bots[i]->mw);
+			reach_cell(bots[i], tgts[i], &cur, &bots[i]->mw, true);
 
-		collect_commands(w, bots); // todo: waiting!
+		if (collect_commands_sync(w, bots)) return;
+
+		// fallback
+		for (int i = 0; i < n; i++) if (bots[i]->pos != tgts[i])
+		{
+			for (int j = 0; j < n; j++) if (i != j) cur[bots[j]->pos] = true;
+			reach_cell(bots[i], tgts[i], &cur, &bots[i]->mw, true);
+			collect_commands(w, bots);
+			for (int j = 0; j < n; j++) if (i != j) cur[bots[j]->pos] = false;
+		}
 	}
 
 	void BFS_blocks(vector<Bot*> bots, Point p, int s)
@@ -160,7 +349,7 @@ struct OvermindSolver
 
 			fill_block(t, bots, s);
 
-			for (auto d : kDeltas6)
+			for (auto d : Deltas26())
 			{
 				auto a = t + d;
 				if (!cur.is_valid(a, s)) continue;
@@ -168,7 +357,9 @@ struct OvermindSolver
 				//if (a.x < XL || a.x > XR) continue;
 				if (m->check_b(a, s))
 				{
-					push(a);
+					if (check_for_all_subdeltas(d, [&](Point b) { return m->check_b(t + b, s); }))
+						push(a);
+					//push(a);
 				}
 			}
 		}
@@ -292,6 +483,7 @@ struct OvermindSolver
 		lims0.clear();
 		for (auto p : starts) lims0.push_back(p.x);
 		cur.clear(R);
+		bad.clear(R);
 
 		// ok, now fission...
 		memset(bots, 0, sizeof(bots));
@@ -340,6 +532,7 @@ struct OvermindSolver
 	TraceWriter *w;
 	Matrix cur;
 	Matrix temp_bfs;
+	Matrix bad;
 	int R, XL, XR;
 	Bot *bots[kMaxBots];
 };
