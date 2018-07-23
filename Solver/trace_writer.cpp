@@ -217,7 +217,7 @@ void FileTraceWriter::fusion_p(const Point & from, const Point & to)
 void FileTraceWriter::fusion_s(const Point & from, const Point & to)
 {
 	invalidate(curp());
-	Assert(from == curp());
+	//Assert(from == curp());
 
 	u8 data = (get_nd(from, to) << 3) + 6;
 	gzwrite(f, &data, 1);
@@ -737,6 +737,7 @@ void MemoryTraceWriter::fusion_s(const Point & from, const Point & to)
 
 void MemoryTraceWriter::fill(const Point & from, const Point & to)
 {
+	//Assert(to != Point({60, 61, 42}));
 	auto d = from.to(to);
 	add({ i8(d.x), i8(d.y), i8(d.z), cmdFill });
 }
