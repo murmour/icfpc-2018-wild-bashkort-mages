@@ -403,6 +403,24 @@ struct SYSTEM_STATE
 		{
 			ss_vm.m[ bots[cmd.bid].pos.x + cmd.p1.x ][ bots[cmd.bid].pos.y + cmd.p1.y ][ bots[cmd.bid].pos.z + cmd.p1.z ] = false;
 		}
+		else if (cmd.tp == CT_GFILL)
+		{
+			Point p1 = bots[cmd.bid].pos + cmd.p1;
+			Point p2 = bots[cmd.bid].pos + cmd.p1 + cmd.p2;
+			for (int a=min(p1.x,p2.x); a<=max(p1.x,p2.x); a++)
+				for (int b=min(p1.y,p2.y); b<=max(p1.y,p2.y); b++)
+					for (int c=min(p1.z,p2.z); c<=max(p1.z,p2.z); c++)
+						ss_vm.m[a][b][c] = true;
+		}
+		else if (cmd.tp == CT_GVOID)
+		{
+			Point p1 = bots[cmd.bid].pos + cmd.p1;
+			Point p2 = bots[cmd.bid].pos + cmd.p1 + cmd.p2;
+			for (int a=min(p1.x,p2.x); a<=max(p1.x,p2.x); a++)
+				for (int b=min(p1.y,p2.y); b<=max(p1.y,p2.y); b++)
+					for (int c=min(p1.z,p2.z); c<=max(p1.z,p2.z); c++)
+						ss_vm.m[a][b][c] = false;
+		}
 	}
 } ss;
 

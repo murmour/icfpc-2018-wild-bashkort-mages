@@ -288,6 +288,16 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 				cmd.tp = CT_FILL;
 				vec.push_back( cmd );
 			}
+			else if (cmd.tp == CT_GFILL)
+			{
+				cmd.tp = CT_GVOID;
+				vec.push_back( cmd );
+			}
+			else if (cmd.tp == CT_GVOID)
+			{
+				cmd.tp = CT_GFILL;
+				vec.push_back( cmd );
+			}
 			else if (cmd.tp == CT_UNDEFINED)
 			{
 				ass( false );
