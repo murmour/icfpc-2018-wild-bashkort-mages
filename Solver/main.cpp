@@ -138,7 +138,7 @@ int main(int argc, char** argv)
 		string tgt_solver = solver;
 		if (System::HasArg("solver2"))
 			tgt_solver = System::GetArgValue("solver2");
-		auto tgt_solver_f = GetSolver(solver);
+		auto tgt_solver_f = GetSolver(tgt_solver);
 		if (!tgt_solver_f) {
 			fprintf(stderr, "Unsupported solver: %s", tgt_solver.c_str());
 			return 3;
