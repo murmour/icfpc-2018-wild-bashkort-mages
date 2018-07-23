@@ -67,7 +67,7 @@ if __name__ == '__main__':
     queue = []
     for bots in range(low_bots, high_bots+1):
         for p in ps:
-            if not (p['prefix'] == 'SA' and bots == 1 and p['id'] in [ 181, 163 ]):
+            if not (p['prefix'] == 'FA' and bots == 1 and p['id'] in [ 181, 163 ]):
                 p2 = dict(p)
                 p2['bots'] = bots
                 queue.append(p2)
