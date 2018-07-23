@@ -533,7 +533,7 @@ struct OvermindSolver
 				}
 		int vol = max_cc * s * s * s;
 		double score = logb(vol, 10) / logb(max_cc + 1, 2);
-		fprintf(stderr, "s = %2d, cc = %9d, score = %9.3lf, vol = %9d\n", s, max_cc, score, vol);
+		//fprintf(stderr, "s = %2d, cc = %9d, score = %9.3lf, vol = %9d\n", s, max_cc, score, vol);
 		if (vol < 1000) return { -1, start };
 		return { score, start };
 	}
