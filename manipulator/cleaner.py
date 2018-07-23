@@ -19,14 +19,9 @@ if __name__ == '__main__':
         l.sort(key = lambda t: t['energy'])
         rubbish = l[2:]
         for t in rubbish:
-            meta = {}
-            if os.path.isfile(t['meta_fname']):
-                with io.open(t['meta_fname'], 'r') as f:
-                    meta = json.loads(f.read())
-                if not 'rubbish' in meta:
-                    meta['rubbish'] = True
-                    with io.open(t['meta_fname'], 'w') as f:
-                        f.write(json.dumps(meta))
             if os.path.isfile(t['fname']):
                 os.remove(t['fname'])
-                print('%s was marked as rubbish and removed' % t['fname'])
+                print('%s was removed' % t['fname'])
+            if os.path.isfile(t['meta_fname']):
+                os.remove(t['meta_fname'])
+                print('%s was removed' % t['meta_fname'])
