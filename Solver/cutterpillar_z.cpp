@@ -67,7 +67,6 @@ struct CutterpillarzSolver
 			cells.erase(cells.begin());
 		};
 
-		temp_bfs.clear(R);
 		auto push = [&](Point p) {
 			if (temp_bfs[p]) return;
 			q.push(p);
@@ -246,6 +245,7 @@ struct CutterpillarzSolver
 		lims0.clear();
 		for (auto p : starts) lims0.push_back(p.z);
 		cur.clear(R);
+		temp_bfs.clear(R);
 
 		// ok, now fission...
 		memset(bots, 0, sizeof(bots));
