@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     for g, l in groups.items():
         l.sort(key = lambda t: t['energy'])
-        rubbish = l[3:]
+        rubbish = l[2:]
         for t in rubbish:
             meta = {}
             with io.open(t['meta_fname'], 'r') as f:
