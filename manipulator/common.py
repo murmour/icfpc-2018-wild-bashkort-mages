@@ -63,3 +63,30 @@ def get_all_good_traces():
             meta = json.loads(f.read())
             t['energy'] = meta['energy']
     return ts
+
+
+trace_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+).nbt.gz$')
+
+def parse_trace_fname(fname):
+    m = re.match(trace_meta_name_rx, fname)
+    if m is None:
+        return None
+    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots')
+    return { 'fname': traces_dir + fname + '.nbt.gz',
+             'meta_fname': traces_dir + fname + '.meta',
+             'prefix': m.group('prefix'),
+             'id': int(m.group('id')),
+             'solver': m.group('solver'),
+             'bots': int(m.group('bots'))}
+
+
+def get_all_traces():
+    ts = [ parse_trace_fname(f) for f in os.listdir(traces_dir) ]
+    ts = list(filter(None, ts))
+    ts.sort(key = lambda t: t['id'])
+    for t in ts:
+        if os.path.isfile(t['meta_fname']):
+            with io.open(t['meta_fname'], 'r') as f:
+                meta = json.loads(f.read())
+                t['energy'] = meta['energy']
+    return ts
