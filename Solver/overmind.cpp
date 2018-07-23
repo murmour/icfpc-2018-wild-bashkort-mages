@@ -694,7 +694,7 @@ struct CompleterSolver
 		R = m->R;
 	}
 
-	void BFS(Bot *b, const vector<Point> &pts, TraceWriter *w)
+	void BFS(Bot *b, const vector<Point> &pts, TraceWriter *w, vector<Point> &added)
 	{
 		queue<Point> q;
 
@@ -769,7 +769,8 @@ struct CompleterSolver
 					reach_cell(b, t, &cur, w);
 					w->fill(b->pos, t);
 				}
-				cur[t] = true;
+				cur[t] = 1;
+				added.push_back(t);
 			}
 			for (auto d : Deltas26())
 			{
@@ -908,7 +909,7 @@ struct CompleterSolver
 					Point p = { x, y, z };
 					if (w->is_filled(p))
 					{
-						cur[p] = true;
+						cur[p] = 2;
 						//temp_bfs[p] = true;
 					}
 				}
@@ -961,6 +962,7 @@ struct CompleterSolver
 		auto run = [&](bool primary) -> bool
 		{
 			bool changed = false;
+			vector<Point> added;
 			for (int seg = 0; seg < n; seg++)
 			{
 				XL = lims0[seg];
@@ -1042,7 +1044,7 @@ struct CompleterSolver
 						{
 							auto t = p + d;
 							if (!cur.is_valid(t)) continue;
-							if (cur[t])
+							if (cur[t] == 2)
 							{
 								found = true;
 								pts.push_back(p);
@@ -1068,7 +1070,7 @@ struct CompleterSolver
 				else
 					continue;
 
-				BFS(bots[seg], pts, &bots[seg]->mw);
+				BFS(bots[seg], pts, &bots[seg]->mw, added);
 				if (y0 > 0)
 				{
 					reach_cell(bots[seg], { x0, y0 - 1, z0 }, &cur, &bots[seg]->mw);
@@ -1076,6 +1078,8 @@ struct CompleterSolver
 				else
 					reach_cell(bots[seg], starts[seg], &cur, &bots[seg]->mw, true);
 			}
+			for (auto p : added)
+				cur[p] = 2;
 			collect_commands(w, all_bots);
 			return changed;
 		};
