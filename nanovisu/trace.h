@@ -30,6 +30,8 @@ enum RipCommandType
 	CT_FISSION,
 	CT_FILL,
 	CT_VOID,
+	CT_GFILL,
+	CT_GVOID,
 	CT_UNDEFINED
 };
 
@@ -71,6 +73,8 @@ struct TraceCommand
 		else if (tp==CT_FISSION) cc = (shrt ? "Fi" : "Fission");
 		else if (tp==CT_FILL) cc = (shrt ? "FL" : "Fill");
 		else if (tp==CT_VOID) cc = (shrt ? "VD" : "Void");
+		else if (tp==CT_GFILL) cc = (shrt ? "GF" : "G Fill");
+		else if (tp==CT_GVOID) cc = (shrt ? "GV" : "G Void");
 		else if (tp==CT_UNDEFINED) cc = (shrt ? "UD" : "Undefined");
 
 		if (!no)
@@ -94,6 +98,8 @@ struct TraceCommand
 #endif
 			else if (tp==CT_FILL) re += coord_to_string( p1 );
 			else if (tp==CT_VOID) re += coord_to_string( p1 );
+			else if (tp==CT_GFILL) re += coord_to_string( p1 ) + " " + coord_to_string( p2 );
+			else if (tp==CT_GVOID) re += coord_to_string( p1 ) + " " + coord_to_string( p2 );
 		}
 
 		if (num_f)

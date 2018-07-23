@@ -109,6 +109,28 @@ TraceCommand TraceReader::read_next()
 		re.tp = CT_VOID;
 		re.p1 = nd_to_point( ch>>3 );
 	}
+	else if (code==1)
+	{
+		re.tp = CT_GFILL;
+		re.p1 = nd_to_point( ch>>3 );
+		unsigned char x, y, z;
+		int sz;
+		sz = gzread(f, &x, 1);
+		sz = gzread(f, &y, 1);
+		sz = gzread(f, &z, 1);
+		re.p2 = { x-30, y-30, z-30 };
+	}
+	else if (code==0)
+	{
+		re.tp = CT_GVOID;
+		re.p1 = nd_to_point( ch>>3 );
+		unsigned char x, y, z;
+		int sz;
+		sz = gzread(f, &x, 1);
+		sz = gzread(f, &y, 1);
+		sz = gzread(f, &z, 1);
+		re.p2 = { x-30, y-30, z-30 };
+	}
 
 	return re;
 }
