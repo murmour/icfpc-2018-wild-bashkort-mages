@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 	}
 	model->init_sums();
 
-	if (ptype == 'A') {
+	if (ptype == 'A' || ptype == 'U') {
         string solver = "bfs";
         if (System::HasArg("solver"))
             solver = System::GetArgValue("solver");
