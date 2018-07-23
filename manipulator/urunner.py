@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                            '-in', p['fname'],
                                            '-out', job['temp_file'],
                                            '-trace', p['best_trace'],
-                                           '-solver', solver,
+                                           '-solver2', solver,
                                            '-bots', str(p['bots'])],
                                           stdin=subprocess.PIPE,
                                           stdout=subprocess.PIPE)
