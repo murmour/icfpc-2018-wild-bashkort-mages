@@ -337,6 +337,7 @@ struct TraceWriter
 	virtual int get_n_moves() const = 0;
 	virtual bool backtrack(int old_moves_count) = 0;
 	virtual int get_filled_count() const = 0;
+	virtual bool is_filled(const Point &p) = 0;
 
 	virtual ~TraceWriter() {}
 };
@@ -365,6 +366,12 @@ struct MemoryTraceWriter : public TraceWriter
 		return 0;
 	}
 	bool can_execute(const Command &cmd)
+	{
+		Assert(false);
+		return false;
+	}
+
+	bool is_filled(const Point &p)
 	{
 		Assert(false);
 		return false;
@@ -402,6 +409,11 @@ struct FileTraceWriter : public TraceWriter
 	void void_(const Point &from, const Point &to);
 	void g_fill(const Point &from, const Point &to, const Point &fd);
 	void g_void(const Point &from, const Point &to, const Point &fd);
+
+	bool is_filled(const Point &p)
+	{
+		return mat[p];
+	}
 
 	Point do_command(const Point &p, Command cmd, int bot_id);
 	bool can_execute(const Command &cmd);

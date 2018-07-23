@@ -42,8 +42,15 @@ int main(int argc, char** argv)
 		solver_f(nullptr, model, tw);
 
 		tw->halt();
-		Assert(tw->get_matrix().check_equal(*model));
-		Assert(tw->get_filled_count() == model->get_filled_count());
+		if (!tw->get_matrix().check_equal(*model))
+		{
+#ifdef DEBUG
+			tw->get_matrix().dump("dump.mdl", { });
+#endif
+			delete tw;
+			Assert(false);
+		}
+		//Assert(tw->get_filled_count() == model->get_filled_count());
 
 		printf("%lld", tw->get_energy()); // print total energy spent
 		delete tw;

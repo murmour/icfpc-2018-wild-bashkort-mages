@@ -81,6 +81,7 @@ void FileTraceWriter::halt()
 	gzwrite(f, &data, 1);
 	Assert(!high_harmonics);
 	Assert(n_bots == 1);
+	Assert(bots[0].pos == Point::Origin);
 	n_bots_next--;
 	next();
 }
