@@ -13,8 +13,8 @@ temp_counter = 0
 
 if __name__ == '__main__':
     if len(sys.argv) < 9:
-        print('Usage: runner.py executable solver solver_alias low_index '
-              'high_index job_count low_bots high_bots kinds')
+        print('Usage: urunner.py executable solver solver_alias low_index '
+              'high_index job_count low_bots high_bots')
         sys.exit(1)
 
     executable = sys.argv[1]
@@ -25,15 +25,15 @@ if __name__ == '__main__':
     job_count = int(sys.argv[6])
     low_bots = int(sys.argv[7])
     high_bots = int(sys.argv[8])
-    kinds = sys.argv[9]
 
     def start_solving(p):
         global temp_counter
         job = {}
-        trace_base = '%s%s_%s%d' % (p['prefix'],
-                                    p['id'],
-                                    solver_alias,
-                                    p['bots'])
+        trace_base = 'FR%s_%s%d%s%s' % (p['id'],
+                                        p['solver'],
+                                        p['bots1'],
+                                        solver_alias,
+                                        p['bots'])
         job['trace_file'] = common.traces_dir + trace_base + '.nbt.gz'
         job['meta_file'] = common.traces_dir + trace_base + '.meta'
         if os.path.isfile(job['meta_file']):
@@ -45,7 +45,8 @@ if __name__ == '__main__':
         job['process'] = subprocess.Popen([executable,
                                            '-in', p['fname'],
                                            '-out', job['temp_file'],
-                                           '-solver', solver,
+                                           '-trace', p['best_trace'],
+                                           '-solver2', solver,
                                            '-bots', str(p['bots'])],
                                           stdin=subprocess.PIPE,
                                           stdout=subprocess.PIPE)
@@ -63,14 +64,27 @@ if __name__ == '__main__':
             with io.open(job['meta_file'], 'w') as f:
                 f.write(json.dumps({'energy': energy}))
 
-    ps = common.filter_problems(low_index, high_index, kinds)
+    ps = common.filter_problems(low_index, high_index, 'U')
+    ts = common.get_all_good_traces()
     queue = []
-    for bots in range(low_bots, high_bots+1):
-        for p in ps:
-            if not (p['prefix'] == 'FA' and bots == 1 and p['id'] in [ 181, 163 ]):
-                p2 = dict(p)
-                p2['bots'] = bots
-                queue.append(p2)
+    for p in ps:
+        fname = common.problems_dir + 'FR%03d_src.mdl' % p['id']
+        pts = [ t for t in ts if t['id'] == p['id'] and t['prefix'] == 'FU']
+        if pts == []:
+            print('FU%d: no solution' % (p['prefix'], p['id']))
+            continue
+        pts.sort(key = lambda pt: pt['energy'])
+        best = pts[0]
+        for bots in range(low_bots, high_bots+1):
+            p2 = dict(p)
+            p2['fname'] = fname
+            p2['prefix'] = 'FR'
+            p2['solver'] = best['solver']
+            p2['bots1'] = best['bots']
+            p2['bots'] = bots
+            p2['best_trace'] = best['fname']
+            queue.append(p2)
+
 
     pool = [None] * job_count
     left = len(queue)

@@ -24,7 +24,7 @@ if __name__ == '__main__':
     for p in ps:
         pts = [ t for t in ts if t['id'] == p['id'] and t['prefix'] == 'FA']
         if pts == []:
-            print('FA%s: no solution' % p['id'])
+            print('FA%d: no solution' % p['id'])
             continue
         pts.sort(key = lambda pt: pt['energy'])
         best = pts[0]

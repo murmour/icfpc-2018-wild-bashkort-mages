@@ -4,7 +4,7 @@ from shutil import copyfile
 
 
 if __name__ == '__main__':
-    ps = common.get_all_problems()
+    ps = common.filter_problems(0, 200, 'ADR')
     ts = common.get_all_good_traces()
     for p in ps:
         pts = [ t for t in ts if t['id'] == p['id'] ]

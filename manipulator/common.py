@@ -39,19 +39,21 @@ def filter_problems(lowIndex, highIndex, kinds):
     return ps
 
 
-trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+).meta$')
+trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).meta$')
 
 def parse_trace_meta_fname(fname):
     m = re.match(trace_meta_name_rx, fname)
     if m is None:
         return None
-    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots')
+    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots') + m.group('solver2') + m.group('bots2')
     return { 'fname': traces_dir + fname + '.nbt.gz',
              'meta_fname': traces_dir + fname + '.meta',
              'prefix': m.group('prefix'),
              'id': int(m.group('id')),
              'solver': m.group('solver'),
-             'bots': int(m.group('bots'))}
+             'solver2': m.group('solver2'),
+             'bots': int(m.group('bots')),
+             'bots2': m.group('bots2')}
 
 
 def get_all_good_traces():
@@ -62,4 +64,33 @@ def get_all_good_traces():
         with io.open(t['meta_fname'], 'r') as f:
             meta = json.loads(f.read())
             t['energy'] = meta['energy']
+    return ts
+
+
+trace_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).nbt.gz$')
+
+def parse_trace_fname(fname):
+    m = re.match(trace_meta_name_rx, fname)
+    if m is None:
+        return None
+    fname = m.group('prefix') + m.group('id') + '_' + m.group('solver') + m.group('bots') + m.group('solver2') + m.group('bots2')
+    return { 'fname': traces_dir + fname + '.nbt.gz',
+             'meta_fname': traces_dir + fname + '.meta',
+             'prefix': m.group('prefix'),
+             'id': int(m.group('id')),
+             'solver': m.group('solver'),
+             'solver2': m.group('solver2'),
+             'bots': int(m.group('bots')),
+             'bots2': m.group('bots2')}
+
+
+def get_all_traces():
+    ts = [ parse_trace_fname(f) for f in os.listdir(traces_dir) ]
+    ts = list(filter(None, ts))
+    ts.sort(key = lambda t: t['id'])
+    for t in ts:
+        if os.path.isfile(t['meta_fname']):
+            with io.open(t['meta_fname'], 'r') as f:
+                meta = json.loads(f.read())
+                t['energy'] = meta['energy']
     return ts
