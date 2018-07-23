@@ -538,7 +538,7 @@ struct OvermindSolver
 		return { score, start };
 	}
 
-	vector<Point> get_path_to_ground(Point start, int s)
+	vector<Point> get_path_to_ground(Point &start, int s)
 	{
 		int N = R / s;
 		get_side_score(s); // put s-matrix to bad
@@ -586,6 +586,7 @@ struct OvermindSolver
 					res.push_back(cur);
 					cur = cur - kDeltas6[temp_bfs[cur] - 1];
 				}
+				start = { cur.x / s, cur.y / s, cur.z / s };
 				return res;
 			}
 			for (int di = 0; di < 6; di++)
