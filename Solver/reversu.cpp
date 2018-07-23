@@ -351,6 +351,8 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 			else if (cmd.tp == CT_FISSION) tw->fission( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1, cmd.m );
 			else if (cmd.tp == CT_FILL) tw->fill( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
 			else if (cmd.tp == CT_VOID) tw->void_( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
+			else if (cmd.tp == CT_GFILL) tw->g_fill( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1, cmd.p2 );
+			else if (cmd.tp == CT_GVOID) tw->g_void( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1, cmd.p2 );
 			else if (cmd.tp == CT_UNDEFINED) { ass( false ); }
 			ss.perform_command( cmd );
 		}
