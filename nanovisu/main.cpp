@@ -783,10 +783,19 @@ void nano_display_code()
 	ImGui::Checkbox( "Show cmd", &show_cmd ); ImGui::SameLine();
 	ImGui::Checkbox( "Short cmd", &short_cmd ); ImGui::SameLine();
 	ImGui::Checkbox( "Coords", &show_coord ); ImGui::SameLine();
+	float scr_max_y = -1.f, scr_cur_y = -1.f, scr_hei = -1.;
+	static float scr_pos = 0.f;
 	ImGui::Checkbox( "Cmd number", &cmd_num );
 	{
 		ImGui::BeginChild( "trace", ImVec2(0, ImGui::GetFrameHeightWithSpacing()*10 + 30), true, ImGuiWindowFlags_HorizontalScrollbar );
 		ImGuiListClipper clipper(trace_cmd.size());
+		if (trace_speed>0)
+		{
+			scr_max_y = ImGui::GetScrollMaxY();
+			//ImGui::SetScrollFromPosY( scr_pos , 0.5f ); // scr_max_y * cur_cmd / (int)trace_cmd.size(), 0.5f );
+			ImGui::SetScrollY( (float)(int)(scr_max_y * cur_cmd / (int)trace_cmd.size()) );
+			//scr_pos += 1.f;
+		}
 		while (clipper.Step())
 		{
 			for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
@@ -798,7 +807,8 @@ void nano_display_code()
 				if (ImGui::Selectable( str, i==cur_cmd, 0, ImVec2(0, ImGui::GetFrameHeightWithSpacing()-4 ) ))
 					go_to_command( i );
 				//ImGui::SameLine();
-				if (i==cur_cmd)
+				scr_cur_y = ImGui::GetScrollY();
+				if (trace_speed==0 && i==cur_cmd)
 					ImGui::SetScrollHere(0.5f);
 				//ImGui::Text( "%d", i );
 				for (int j=0; j<(int)trace_cmd[i].size(); j++)
@@ -818,6 +828,8 @@ void nano_display_code()
 		}
 		ImGui::EndChild();
 	}
+
+	//ImGui::Text( "%f %f/%f", scr_pos, scr_cur_y, scr_max_y );
 
 	if (trace_mode)
 	{
@@ -963,6 +975,7 @@ void display_func()
 	gluPerspective(45, 1.*io.DisplaySize.x/io.DisplaySize.y, 0.1, 100.0);
 
 	static double ang_alpha = 0., ang_beta = 0.;
+	//ang_alpha += 0.001;
 	if (io.MouseDown[0] && !io.WantCaptureMouse)
 	{
 		ang_alpha += io.MouseDelta.x*0.005;
