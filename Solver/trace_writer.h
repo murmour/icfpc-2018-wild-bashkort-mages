@@ -434,7 +434,7 @@ private:
 	void next();
 	void invalidate(const Point &p)
 	{
-		//Assert(!mat[p]);
+		Assert(!mat[p]);
 		Assert(!(inv[p] & 1));
 		inv[p] = 1;
 		inv_v.push_back(p);

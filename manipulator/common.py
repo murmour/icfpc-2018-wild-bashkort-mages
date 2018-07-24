@@ -39,7 +39,9 @@ def filter_problems(lowIndex, highIndex, kinds):
     return ps
 
 
-trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).meta$')
+trace_meta_name_rx = re.compile('(?P<prefix>[a-zA-Z]+)(?P<id>[0-9]+)_'
+                                '(?P<solver>[a-zA-Z_]+)(?P<bots>[0-9]+)'
+                                '(?P<solver2>[a-zA-Z_]*)(?P<bots2>[0-9]*).meta$')
 
 def parse_trace_meta_fname(fname):
     m = re.match(trace_meta_name_rx, fname)

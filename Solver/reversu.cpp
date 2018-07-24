@@ -342,8 +342,8 @@ extern int reverse_trace(string in_file, FileTraceWriter *tw)
 			else if (cmd.tp == CT_S_MOVE) tw->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );
 			else if (cmd.tp == CT_L_MOVE)
 			{
-				int c1 = (cmd.p1.x!=0 ? 0 : (cmd.p1.y!=0 ? 1 : 2));
-				int c2 = (cmd.p2.x!=0 ? 0 : (cmd.p2.y!=0 ? 1 : 2));
+				int c1 = first_changed_coord(cmd.p1);
+				int c2 = first_changed_coord(cmd.p2);
 				tw->move( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1+cmd.p2, c1 > c2 );
 			}
 			else if (cmd.tp == CT_FUSION_P) tw->fusion_p( ss.bots[cmd.bid].pos, ss.bots[cmd.bid].pos+cmd.p1 );

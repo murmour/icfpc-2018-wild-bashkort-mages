@@ -226,15 +226,16 @@ struct OvermindSolver
 			Point B = targets[oc] + dir2;
 			B2 = B + dir1;
 			Assert(cur.is_valid(B2));
-			if (!bots[oc]->pos.is_near(B2))
+			Point Breal = cur[B2] ? B2 : B;
+			if (!bots[oc]->pos.is_near(Breal))
 			{
-				reach_cell(bots[oc], B2, &cur, &bots[oc]->mw, false);
+				reach_cell(bots[oc], Breal, &cur, &bots[oc]->mw, false);
 				//Assert(bots[oc]->pos.is_near(targets[oc]));
 				collect_commands(w, bots);
 			}
 			// remove the column
-			bots[bad_corner]->mw.g_void(bots[bad_corner]->pos, A, B2 - A);
-			bots[oc]->mw.g_void(bots[oc]->pos, B2, A - B2);
+			bots[bad_corner]->mw.g_void(bots[bad_corner]->pos, A, Breal - A);
+			bots[oc]->mw.g_void(bots[oc]->pos, Breal, A - Breal);
 			collect_commands(w, bots);
 
 			if (!bots[oc]->pos.is_near(targets[oc]))
@@ -244,7 +245,7 @@ struct OvermindSolver
 			}
 
 			was_b2 = cur[B2];
-			rd = Region(A, B2);
+			rd = Region(A, Breal);
 			rd.for_each([&](Point t) {
 				cur[t] = false;
 			});

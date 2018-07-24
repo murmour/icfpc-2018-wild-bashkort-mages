@@ -20,6 +20,8 @@ int main(int argc, char** argv)
 	auto in_file = System::GetArgValue("in");
 
 	char ptype = get_type(in_file);
+	if (System::HasArg("type"))
+		ptype = System::GetArgValue("type")[0];
 
 	Matrix *model = new Matrix();
 	if (!model->load_from_file(in_file.c_str())) {
@@ -84,7 +86,7 @@ int main(int argc, char** argv)
 		FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, model);
 		reverse_trace(rev_out_file, tw);
 		tw->halt();
-		//Assert(tw->get_filled_count() == 0);
+		Assert(tw->get_filled_count() == 0);
 
 		printf("%lld", tw->get_energy());
 		delete tw;
@@ -139,6 +141,16 @@ int main(int argc, char** argv)
 		// Reversing construction to deconstruction
 		FileTraceWriter *tw = new FileTraceWriter(out_file.c_str(), model->R, model);
 		reverse_trace(rev_out_file, tw);
+		/*
+		if (tw->get_filled_count() != 0)
+		{
+			tw->get_matrix().dump("x.mdl", {});
+			tw->halt();
+			delete tw;
+			exit(111);
+			Assert(false);
+		}
+		*/
 		Assert(tw->get_filled_count() == 0);
 
 		// Construction
