@@ -14,7 +14,6 @@ __pycache__
 _build
 *.tar.gz
 solutions
-data
 log_*
 *.log
 *.html
