@@ -24,6 +24,7 @@ memory of the contest. The video is based on our awesome visualizer.
 
 We hope you enjoy it!
 https://www.youtube.com/watch?v=lMHMyh5XTIE
+(the video file is also near this README: nanovisu_birth.mp4)
 
 The visualizer in question is written in C++, is located in folder "nanovisu",
 and should compile on both Linux (run "make"), and Windows (use the Visual
