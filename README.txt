@@ -26,10 +26,10 @@ We hope you enjoy it!
 https://www.youtube.com/watch?v=lMHMyh5XTIE
 (the video file is also near this README: nanovisu_birth.mp4)
 
-The visualizer in question is written in C++, is located in folder "nanovisu",
-and should compile on both Linux (run "make"), and Windows (use the Visual
-Studio project). It expects the trace files to be gz-compressed (we used
-compression to save space and bandwidth).
+The visualizer is written in C++, is located in folder "nanovisu", and should
+compile on both Linux (run "make"), and Windows (use the included Visual Studio
+project). It expects the trace files to be gz-compressed (we used compression to
+save space and bandwidth).
 
 If you run "nanovisu" with no arguments, it will load models from
 ../data/problemsF and the associated solutions from ../data/tracesF. You can
@@ -62,7 +62,7 @@ constructing both the source and the target independently, and then reversing
 the first trace and concatenating it with the second. Easy-peasy.
 
 Our solver produced solutions to all of the 487 problems, and the total energy
-spent was133'891'156'887'586 (individual results by problem can be found in
+spent was 133'891'156'887'586 (individual results by problem can be found in
 best_scores.txt). We have nearly no clue as to how it compares with solutions
 from other teams, but we find our result satisfactory in regards to our
 self-esteem, and hold no shame to it.
