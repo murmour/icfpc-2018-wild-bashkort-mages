@@ -17,14 +17,18 @@ the alternative API did take our submission during the last minutes.
 Shame on us.
 
 Still, being the big losers that we are, we are proud losers, and we lose with
-dignity. Losing is not fun, but we had lots of fun during the contest, and it was
-totally worth it. Also, here, in Bashkortostan, we have a national habit of having
-fun all the time, and as a result of this habit we've produced a fun video in
-memory of the contest. The video is based on our awesome visualizer.
+dignity. Losing is not fun, but we had lots of fun during the contest, and it
+was totally worth it. Also, here, in Bashkortostan, we have a national habit of
+having fun all the time, and as a result of this habit we've produced a fun
+video that is based on our awesome visualizer. This video is a monument to our
+solvers, our tools, and the contest in general.
+
+Now, the history of our glory is written, even without a score.
 
 We hope you enjoy it!
 https://www.youtube.com/watch?v=lMHMyh5XTIE
 (the video file is also near this README: nanovisu_birth.mp4)
+
 
 The visualizer is written in C++, is located in folder "nanovisu", and should
 compile on both Linux (run "make"), and Windows (use the included Visual Studio
